@@ -5,9 +5,9 @@ Fall shorelines of Great Salt Lake mapped from Landsat imagery, stacked into a
 
 ![Stacked fall shorelines of Great Salt Lake, 1985–2026](figures/output/GSL_shoreline_stack_1985-2026.png)
 
-An interactive, rotatable version is in
-[`figures/output/gsl_shorelines_interactive.html`](figures/output/gsl_shorelines_interactive.html)
-(download and open it in a browser).
+**[Open the interactive, rotatable version](https://joshlemonte.github.io/great-salt-lake-shorelines/)** in your browser
+(no download needed). The source file is
+[`figures/output/gsl_shorelines_interactive.html`](figures/output/gsl_shorelines_interactive.html).
 
 ## What is here
 
