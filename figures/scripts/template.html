@@ -1,0 +1,413 @@
+<title>Great Salt Lake Shorelines</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working view. Rotatable stack on the left, a reading panel on the right
+   (selected year, area-by-year chart, controls), method notes underneath. */
+:root {
+  --bg: #f6f7f6;          /* salt-flat white, faintly cool */
+  --panel: #ffffff;
+  --fg: #15191a;
+  --muted: #5b6466;
+  --rule: #d9dddb;
+  --grid: #e6e9e8;
+  --brine: #b8405e;       /* north-arm brine pink: the selected year */
+  --lake: #2a78d6;        /* lake-area series */
+  --bed: #eb6834;         /* exposed-lakebed series */
+  --div: #9c3a12,#d9581f,#f0a07a,#b3b0a9,#7fb0ee,#2a78d6,#0d366b;  /* level: far below -> 4,198 ft -> far above */
+  --ref: #5b6466;         /* healthy-minimum reference line */
+  --good: #2f7d4f; --check: #9a6a00; --poor: #b23b3b;
+  --font: "Public Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111415; --panel: #181c1d; --fg: #e8ecea; --muted: #9aa3a5;
+    --rule: #2c3335; --grid: #242a2c; --brine: #e58aa0; --lake: #3987e5; --bed: #d95926;
+    --div: #f7b48c,#e8743f,#9c4a26,#5d5b56,#1c5cab,#3987e5,#9ec5f4; --ref: #9aa3a5;
+    --good: #6cc191; --check: #e0b44a; --poor: #f08a8a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111415; --panel: #181c1d; --fg: #e8ecea; --muted: #9aa3a5;
+  --rule: #2c3335; --grid: #242a2c; --brine: #e58aa0; --lake: #3987e5; --bed: #d95926;
+  --div: #f7b48c,#e8743f,#9c4a26,#5d5b56,#1c5cab,#3987e5,#9ec5f4; --ref: #9aa3a5;
+  --good: #6cc191; --check: #e0b44a; --poor: #f08a8a;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap {
+  max-width: 1320px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 40px;
+  display: grid; gap: 20px;
+}
+header { display: grid; gap: 6px; }
+.eyebrow { font: 500 12px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.1; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 68ch; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.stage { position: relative; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; min-width: 0; }
+#scene { width: 100%; height: clamp(380px, 68vh, 720px); }
+.hint { position: absolute; left: 14px; bottom: 10px; font: 12px var(--mono); color: var(--muted); pointer-events: none; }
+aside { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.card h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--muted); }
+.yr { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.yr .big { font: 600 40px/1 var(--font); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.pill { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 5px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.pill.good { color: var(--good); } .pill.check { color: var(--check); } .pill.poor { color: var(--poor); }
+dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; }
+dt { color: var(--muted); font-size: 13px; }
+dd { margin: 0; font: 500 14px var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+#area { width: 100%; height: 250px; }
+.series { display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
+.series span { display: inline-flex; align-items: center; gap: 6px; }
+.series i { width: 14px; height: 2px; border-radius: 1px; display: inline-block; }
+.series i.dash { height: 0; border-top: 2px dashed var(--ref); background: none; }
+.controls { display: grid; gap: 12px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+label { font-size: 13px; color: var(--muted); }
+input[type=range] { width: 150px; accent-color: var(--brine); }
+input[type=checkbox] { accent-color: var(--brine); width: 16px; height: 16px; }
+button {
+  font: 500 13px var(--font); color: var(--fg); background: transparent;
+  border: 1px solid var(--rule); border-radius: 4px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+:focus-visible { outline: 2px solid var(--brine); outline-offset: 2px; }
+.legend { display: grid; gap: 6px; }
+.ramp { height: 8px; border-radius: 2px; }
+.ramp-labels { display: flex; justify-content: space-between; font: 12px var(--mono); color: var(--muted); }
+footer { color: var(--muted); font-size: 13px; display: grid; gap: 6px; max-width: 92ch; }
+footer p { margin: 0; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow">Landsat surface reflectance · 30 m · fall shoreline</div>
+    <h1>Great Salt Lake Shorelines</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <div id="scene" role="img" aria-label="Three-dimensional stack of yearly Great Salt Lake shorelines"></div>
+      <div class="hint">Drag to rotate · scroll to zoom · hover a ring</div>
+    </div>
+
+    <aside>
+      <section class="card" aria-live="polite">
+        <h2 id="readout-label">Selected year</h2>
+        <div class="yr"><span class="big" id="r-year"></span><span class="pill" id="r-q"></span></div>
+        <dl>
+          <dt>Fall lake level</dt><dd id="r-elev"></dd>
+          <dt>vs. healthy minimum</dt><dd id="r-dev"></dd>
+          <dt>Lake area</dt><dd id="r-km"></dd>
+          <dt></dt><dd id="r-mi"></dd>
+          <dt>Area vs. healthy minimum</dt><dd id="r-vs"></dd>
+          <dt>Exposed below healthy level</dt><dd id="r-bed"></dd>
+          <dt>Landsat scenes</dt><dd id="r-n"></dd>
+          <dt>Shoreline under cloud</dt><dd id="r-gap"></dd>
+        </dl>
+      </section>
+
+      <section class="card">
+        <h2>Area by year (km²)</h2>
+        <div class="series" aria-hidden="true">
+          <span><i style="background: var(--lake)"></i>Lake</span>
+          <span><i style="background: var(--bed)"></i>Lakebed exposed below healthy level</span>
+          <span><i class="dash"></i>Healthy minimum (4,198 ft)</span>
+        </div>
+        <div id="area"></div>
+      </section>
+
+      <section class="card controls">
+        <div class="legend">
+          <h2>Ring color: fall lake level vs. healthy minimum</h2>
+          <div class="ramp" id="ramp"></div>
+          <div class="ramp-labels"><span id="ramp-lo"></span><span>4,198 ft</span><span id="ramp-hi"></span></div>
+        </div>
+        <div class="row">
+          <label for="stretch">Stack height</label>
+          <input type="range" id="stretch" min="0.2" max="1.6" step="0.05" value="0.7">
+        </div>
+        <div class="row">
+          <label for="fills">Water fill</label>
+          <input type="checkbox" id="fills" checked>
+        </div>
+        <div class="row">
+          <button id="reset" type="button">Reset view</button>
+          <button id="clear" type="button">Clear selection</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <footer>
+    <p>Each ring is that year's typical shoreline from September 1 to November 15, classified from every clear Landsat look (MNDWI with a per-scene Otsu threshold, cloud masked pixel by pixel). Dashed rings and open circles mark years where cloud gaps touch more than 10% of the shoreline.</p>
+    <p id="bed-note"></p>
+    <p>Farmington and Bear River bays are included only while connected to the main lake. The 1987 lobe on the west side is flooded low ground; it is cut where it ran past the western edge of the area searched.</p>
+    <p id="src-note"></p>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById("data").textContent).years;
+  const sceneEl = document.getElementById("scene");
+  const areaEl = document.getElementById("area");
+  const years = DATA.map(d => d.year);
+  const areas = DATA.map(d => d.area_km2);
+  const beds = DATA.map(d => d.exposed_km2);
+  const HEALTHY = JSON.parse(document.getElementById("data").textContent).healthy;
+  const A_H = HEALTHY.area_km2, DEV_SPAN = 12;   // ring color saturates at ±12 ft
+  // years with no outline: break the area lines there instead of bridging them
+  const MISSING = [];
+  for (let y = years[0]; y <= years[years.length - 1]; y++) if (!years.includes(y)) MISSING.push(y);
+  const gapped = vals => { const xs = [], ys = [];
+    years.forEach((y, i) => { if (i && y - years[i - 1] > 1) { xs.push(y - 0.5); ys.push(null); } xs.push(y); ys.push(vals[i]); });
+    return [xs, ys]; };
+  const iMax = areas.indexOf(Math.max(...areas));
+  const iMin = areas.indexOf(Math.min(...areas));
+  const N = DATA.length;
+  const fmt = n => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+
+  // extents for the aspect ratio
+  let xs = [], ys = [];
+  DATA.forEach(d => d.x.forEach((v, k) => { if (v !== null) { xs.push(v); ys.push(d.y[k]); } }));
+  const xr = [Math.min(...xs), Math.max(...xs)], yr = [Math.min(...ys), Math.max(...ys)];
+  const yAspect = (yr[1] - yr[0]) / (xr[1] - xr[0]);
+  xs = ys = null;
+
+  // the current run of years below the healthy minimum
+  let since = null;
+  for (let i = N - 1; i >= 0 && DATA[i].dev_ft < 0; i--) since = DATA[i].year;
+  const nBelow = DATA.filter(d => d.dev_ft < 0).length;
+  const lowest = DATA.reduce((a, b) => (b.dev_ft < a.dev_ft ? b : a));
+  document.getElementById("lede").textContent =
+    `${years[0]}–${years[N - 1]}. Each ring is one fall's shoreline, stacked from oldest at the bottom to newest at the top, ` +
+    `and colored by how far that fall's lake level sat above or below the 4,198 ft healthy minimum. ` +
+    `The lake was below it in ${nBelow} of ${N} falls` + (since ? `, and every fall since ${since}` : "") +
+    `; in ${lowest.year} it was ${Math.abs(lowest.dev_ft).toFixed(1)} ft below, with ${fmt(lowest.exposed_km2)} km² of healthy-level lakebed dry.`;
+  document.getElementById("bed-note").textContent =
+    `Healthy minimum: 4,198 ft, about ${fmt(A_H)} km² of lake. That area is the Landsat area expected at 4,198 ft, from a straight-line fit of these outlines' areas ` +
+    `against fall lake level for the ${HEALTHY.fit_n} years within 3 ft of it (${fmt(HEALTHY.fit_slope_km2_per_ft)} km² per ft), so it uses the same method as the rings. ` +
+    `USGS bathymetry gives 3,684 km² at 4,198 ft; these Landsat areas run about 5% above the bathymetric areas. ` +
+    `Lakebed exposed below the healthy level is ${fmt(A_H)} km² minus that fall's lake area, and zero when the lake is larger. ` +
+    `Fall lake level is the September 1 to November 15 mean at the Saltair gage (USGS 10010000), NGVD29; 2026 runs through November 4.`;
+  document.getElementById("src-note").textContent =
+    `Data: USGS Landsat Collection 2 Level-2 via Esri Living Atlas. Outlines processed in ArcGIS Pro. Area is geodesic.` +
+    (MISSING.length ? ` No outline for ${MISSING.join(", ")} (processing failed); the area lines break there.` : "");
+
+  const css = () => getComputedStyle(document.documentElement);
+  function tokens() {
+    const s = css();
+    const g = n => s.getPropertyValue(n).trim();
+    return { bg: g("--bg"), panel: g("--panel"), fg: g("--fg"), muted: g("--muted"), rule: g("--rule"),
+      grid: g("--grid"), brine: g("--brine"), lake: g("--lake"), bed: g("--bed"), ref: g("--ref"),
+      div: g("--div").split(",").map(t => t.trim()),
+      font: g("--font"), mono: g("--mono") };
+  }
+  function hexRgb(h) { h = h.replace("#", ""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+  function rampColor(ramp, t) {
+    t = Math.max(0, Math.min(1, t));
+    const p = t * (ramp.length - 1), i = Math.min(Math.floor(p), ramp.length - 2), f = p - i;
+    const a = hexRgb(ramp[i]), b = hexRgb(ramp[i + 1]);
+    return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
+  }
+  const devColor = d => rampColor(T.div, (d.dev_ft + DEV_SPAN) / (2 * DEV_SPAN));
+  const sgn = (v, digits = 0, unit = "") => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })}${unit}`;
+
+  let T = tokens();
+  let selected = null;   // pinned index
+  let hovered = null;
+  let fillsOn = true;
+  const DEFAULT_CAM = { eye: { x: 0.95, y: -1.1, z: 0.62 }, center: { x: 0, y: 0, z: -0.1 }, up: { x: 0, y: 0, z: 1 } };
+
+  function lineStyle(i, focus) {
+    const d = DATA[i];
+    const base = devColor(d);
+    if (focus === null) return { color: base, width: (i === iMax || i === iMin) ? 5 : 2.5, opacity: 1 };
+    if (i === focus) return { color: T.brine, width: 7, opacity: 1 };
+    return { color: base, width: 2, opacity: 0.35 };
+  }
+
+  function sceneTraces() {
+    const tr = [];
+    DATA.forEach((d, i) => {
+      const st = lineStyle(i, null);
+      tr.push({
+        type: "scatter3d", mode: "lines", x: d.x, y: d.y, z: d.x.map(v => v === null ? null : d.year),
+        connectgaps: false,
+        line: { color: st.color, width: st.width, dash: d.quality === "poor" ? "dash" : "solid" },
+        text: `${d.year}`, customdata: d.x.map(() => i),
+        hovertemplate: `<b>${d.year}</b><br>${d.elev_ft.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ft (${sgn(d.dev_ft, 1, " ft")})<br>${fmt(d.area_km2)} km²<extra></extra>`,
+        showlegend: false, name: String(d.year)
+      });
+    });
+    DATA.forEach((d, i) => {
+      tr.push({
+        type: "mesh3d", x: d.fx, y: d.fy, z: d.fx.map(() => d.year), i: d.i, j: d.j, k: d.k,
+        color: devColor(d), opacity: 0.07, flatshading: true,
+        lighting: { ambient: 1, diffuse: 0, specular: 0, roughness: 1, fresnel: 0 },
+        hoverinfo: "skip", showscale: false, visible: fillsOn, name: `fill ${d.year}`
+      });
+    });
+    return tr;
+  }
+
+  function zTicks() {
+    const t = new Set([years[iMax], years[iMin]]);
+    for (let y = 1990; y <= years[N - 1]; y += 5)
+      if (years.includes(y) && Math.min(Math.abs(y - years[iMax]), Math.abs(y - years[iMin])) >= 4) t.add(y);
+    if (years[N - 1] - Math.max(...t) >= 3) t.add(years[N - 1]);
+    const vals = [...t].sort((a, b) => a - b);
+    return { vals, text: vals.map(v => v === years[iMax] ? `${v} high` : v === years[iMin] ? `${v} low` : String(v)) };
+  }
+
+  function sceneLayout(camera) {
+    const z = parseFloat(document.getElementById("stretch").value);
+    const zt = zTicks();
+    const hidden = { visible: true, showticklabels: false, title: { text: "" }, showgrid: false,
+      zeroline: false, showline: false, showbackground: false, showspikes: false, range: undefined };
+    return {
+      paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+      margin: { l: 0, r: 0, t: 0, b: 0 },
+      font: { family: T.font, color: T.muted, size: 12 },
+      hoverlabel: { bgcolor: T.panel, bordercolor: T.rule, font: { family: T.mono, color: T.fg, size: 12 } },
+      scene: {
+        aspectmode: "manual", aspectratio: { x: 1, y: yAspect, z },
+        xaxis: { ...hidden, range: xr }, yaxis: { ...hidden, range: yr },
+        zaxis: {
+          title: { text: "" }, range: [years[0] - 0.5, years[N - 1] + 0.5],
+          tickvals: zt.vals, ticktext: zt.text, tickfont: { family: T.mono, size: 11, color: T.muted },
+          gridcolor: T.grid, showbackground: false, zeroline: false, showspikes: false, linecolor: T.rule
+        },
+        camera: camera || DEFAULT_CAM, dragmode: "turntable"
+      }
+    };
+  }
+
+  function areaTraces() {
+    const focus = hovered ?? selected;
+    return [
+      { type: "scatter", mode: "lines", x: gapped(areas)[0], y: gapped(areas)[1], line: { color: T.lake, width: 2 },
+        connectgaps: false, hoverinfo: "skip", showlegend: false },
+      { type: "scatter", mode: "markers", x: years, y: areas,
+        marker: {
+          size: years.map((_, i) => i === focus ? 12 : 8),
+          color: DATA.map((d, i) => d.quality === "poor" ? T.panel : (i === focus ? T.brine : devColor(d))),
+          line: { width: DATA.map((d, i) => d.quality === "poor" ? 2 : 1.5),
+                  color: DATA.map((d, i) => d.quality === "poor" ? (i === focus ? T.brine : devColor(d)) : T.panel) }
+        },
+        hovertemplate: "<b>%{x}</b> lake<br>%{y:,.0f} km²<extra></extra>", showlegend: false },
+      { type: "scatter", mode: "lines", x: [years[0] - 1, years[N - 1] + 1], y: [A_H, A_H],
+        line: { color: T.ref, width: 1.5, dash: "dash" }, hoverinfo: "skip", showlegend: false },
+      { type: "scatter", mode: "lines", x: gapped(beds)[0], y: gapped(beds)[1], line: { color: T.bed, width: 2 },
+        connectgaps: false, hoverinfo: "skip", showlegend: false },
+      { type: "scatter", mode: "markers", x: years, y: beds,
+        marker: { size: years.map((_, i) => i === focus ? 10 : 6),
+                  color: years.map((_, i) => i === focus ? T.brine : T.bed),
+                  line: { width: 1.5, color: T.panel } },
+        hovertemplate: "<b>%{x}</b> exposed below healthy level<br>%{y:,.0f} km²<extra></extra>", showlegend: false }
+    ];
+  }
+  function areaLayout() {
+    return {
+      paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+      margin: { l: 46, r: 62, t: 6, b: 28 }, font: { family: T.mono, color: T.muted, size: 11 },
+      hovermode: "closest",
+      hoverlabel: { bgcolor: T.panel, bordercolor: T.rule, font: { family: T.mono, color: T.fg, size: 12 } },
+      xaxis: { showgrid: false, zeroline: false, linecolor: T.rule, ticks: "", dtick: 10, tick0: 1990, tickangle: 0, fixedrange: true,
+               range: [years[0] - 1, years[N - 1] + 1] },
+      yaxis: { gridcolor: T.grid, zeroline: false, showline: false, tickformat: ",", fixedrange: true,
+               dtick: 1000, range: [0, Math.ceil((Math.max(...areas) + 300) / 1000) * 1000] },
+      annotations: [
+        { x: years[N - 1] + 1, y: A_H, text: "Healthy minimum", xanchor: "right", yanchor: "bottom", yshift: 1,
+          showarrow: false, font: { family: T.font, size: 11, color: T.muted } },
+        { x: years[N - 1], y: areas[N - 1], text: "Lake", xanchor: "left", yanchor: "middle", xshift: 8,
+          showarrow: false, font: { family: T.font, size: 12, color: T.fg } },
+        { x: years[N - 1], y: beds[N - 1], text: "Exposed", xanchor: "left", yanchor: "middle", xshift: 8,
+          showarrow: false, font: { family: T.font, size: 12, color: T.fg } }
+      ]
+    };
+  }
+
+  function renderReadout() {
+    const i = hovered ?? selected ?? N - 1;
+    const d = DATA[i];
+    document.getElementById("readout-label").textContent =
+      (hovered ?? selected) === null ? "Most recent year" : (selected !== null && hovered === null ? "Pinned year" : "Selected year");
+    document.getElementById("r-year").textContent = d.year;
+    const q = document.getElementById("r-q");
+    q.textContent = d.quality; q.className = "pill " + d.quality;
+    document.getElementById("r-elev").textContent = `${d.elev_ft.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ft`;
+    document.getElementById("r-dev").textContent = sgn(d.dev_ft, 1, " ft");
+    document.getElementById("r-km").textContent = `${fmt(d.area_km2)} km²`;
+    document.getElementById("r-mi").textContent = `${fmt(d.area_mi2)} mi²`;
+    document.getElementById("r-vs").textContent = `${sgn(d.vs_healthy_km2, 0, " km²")} (${sgn(d.vs_healthy_km2 / A_H * 100, 0, "%")})`;
+    document.getElementById("r-bed").textContent = `${fmt(d.exposed_km2)} km²`;
+    document.getElementById("r-n").textContent = `${d.n_scenes} (${d.sensors.replace(/LT0/g, "L").replace(/LE0/g, "L").replace(/LC0/g, "L")})`;
+    document.getElementById("r-gap").textContent = `${d.edge_gap.toFixed(1)}%`;
+  }
+
+  function applyFocus() {
+    const focus = hovered ?? selected;
+    const idx = DATA.map((_, i) => i);
+    const st = idx.map(i => lineStyle(i, focus));
+    Plotly.restyle(sceneEl, { "line.color": st.map(s => s.color), "line.width": st.map(s => s.width),
+                              opacity: st.map(s => s.opacity) }, idx);
+    Plotly.react(areaEl, areaTraces(), areaLayout(), { displayModeBar: false, responsive: true });
+    renderReadout();
+  }
+
+  function renderAll(keepCamera) {
+    T = tokens();
+    const cam = keepCamera && sceneEl.layout ? sceneEl.layout.scene.camera : null;
+    Plotly.react(sceneEl, sceneTraces(), sceneLayout(cam), { displaylogo: false, responsive: true,
+      modeBarButtonsToRemove: ["resetCameraLastSave3d", "hoverClosest3d", "orbitRotation", "tableRotation", "zoom3d", "pan3d"] });
+    Plotly.react(areaEl, areaTraces(), areaLayout(), { displayModeBar: false, responsive: true });
+    const ramp = document.getElementById("ramp");
+    ramp.style.background = `linear-gradient(90deg, ${T.div.join(",")})`;
+    document.getElementById("ramp-lo").textContent = `−${DEV_SPAN} ft`;
+    document.getElementById("ramp-hi").textContent = `+${DEV_SPAN} ft`;
+    if ((hovered ?? selected) !== null) applyFocus(); else renderReadout();
+  }
+
+  renderAll(false);
+
+  // interactions
+  let raf = 0;
+  function setHover(i) { if (hovered === i) return; hovered = i; cancelAnimationFrame(raf); raf = requestAnimationFrame(applyFocus); }
+  sceneEl.on("plotly_hover", e => { const p = e.points[0]; if (p && p.curveNumber < N) setHover(p.curveNumber); });
+  sceneEl.on("plotly_unhover", () => setHover(null));
+  sceneEl.on("plotly_click", e => { const p = e.points[0]; if (p && p.curveNumber < N) { selected = selected === p.curveNumber ? null : p.curveNumber; applyFocus(); } });
+  const pick = e => e.points.find(q => q.curveNumber === 1 || q.curveNumber === 4);
+  areaEl.on("plotly_hover", e => { const p = pick(e); if (p) setHover(p.pointIndex); });
+  areaEl.on("plotly_unhover", () => setHover(null));
+  areaEl.on("plotly_click", e => { const p = pick(e); if (p) { selected = selected === p.pointIndex ? null : p.pointIndex; hovered = null; applyFocus(); } });
+
+  document.getElementById("stretch").addEventListener("input", e =>
+    Plotly.relayout(sceneEl, { "scene.aspectratio": { x: 1, y: yAspect, z: parseFloat(e.target.value) } }));
+  document.getElementById("fills").addEventListener("change", e => {
+    fillsOn = e.target.checked;
+    Plotly.restyle(sceneEl, { visible: fillsOn }, DATA.map((_, i) => N + i));
+  });
+  document.getElementById("reset").addEventListener("click", () => Plotly.relayout(sceneEl, { "scene.camera": DEFAULT_CAM }));
+  document.getElementById("clear").addEventListener("click", () => { selected = null; hovered = null; applyFocus(); });
+
+  // follow the viewer's theme
+  const mq = matchMedia("(prefers-color-scheme: dark)");
+  (mq.addEventListener ? mq.addEventListener("change", () => renderAll(true)) : mq.addListener(() => renderAll(true)));
+  new MutationObserver(() => renderAll(true)).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
