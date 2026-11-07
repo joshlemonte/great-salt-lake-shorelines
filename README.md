@@ -53,11 +53,44 @@ bathymetric area at that fall's mean Saltair gage level (r = 0.986). The Landsat
 areas run about 5% higher on average, consistent with wet margins and connected
 ponds being counted as water.
 
+**Water needed to reach 4,198 ft.** For each fall below the healthy minimum, the
+volume of water between that fall's level and 4,198 ft: the USGS bathymetric lake
+area at each fall level (`data/fall_levels_and_usgs_areas.csv`) as a piecewise-linear
+area–elevation curve, integrated from the fall level up to 4,198 ft. The page gives it
+in gallons, Olympic swimming pools (2,500 m³, about 660,000 gallons) and acre-feet.
+It assumes the whole lake rises to 4,198 ft at the south-arm Saltair gage; the north
+arm usually sits lower, so the true amount is somewhat larger. From 4,191 ft this
+gives about 5.2 million acre-feet, close to published estimates of roughly 5 million.
+The 2022 low (4,188.9 ft) needs about 2.1 trillion gallons.
+
+**Drawing fixes** (`figures/scripts/build_viz_data.py`):
+- *Causeway.* The railroad causeway splits the lake into north and south arms, and
+  their shared edge drew as a straight line across the lake. Inside a box around the
+  causeway only, the two arms are joined in the drawing. Areas are unchanged.
+- *Water fill.* Every lake part is filled. The earlier build filled only the first
+  ring, so years with the north arm as a separate polygon (2003, 2010, 2016,
+  2021–2023) had no north-arm fill.
+- *Incomplete outlines.* Three years are filled in, and the filled shoreline is drawn
+  dotted on the interactive page. The readout and area chart use the filled areas.
+  - **2012:** Landsat 7 striping (SLC-off) across the north arm. Stripes are closed
+    from 2012's own pixels, and the unimaged shoreline is filled from 2005, the year
+    within 2 ft of 2012's level whose imaged north arm matches 2012's best.
+    3,123 km² as imaged, about 3,373 km² filled.
+  - **2017:** the north arm west of a Landsat scene edge was not imaged. Filled from
+    2019, chosen the same way. 2,581 km² as imaged, about 3,222 km² filled.
+  - **2024:** thin scene-seam gaps in the north arm closed from 2024's own pixels.
+    2,652 km² as imaged, about 2,681 km² filled.
+
 ## Known limitations
 
 - **2025** has no outline because processing failed in the last run.
 - **Low-confidence years:** 1993, 2009, 2012 and 2018 have cloud gaps along more
   than 10% of the shoreline.
+- **Filled years:** parts of the 2012 and 2017 north-arm shorelines come from other
+  years (see Drawing fixes), so their areas are estimates.
+- **2023 and 2024 north arm:** the shallow western lobe present in neighboring years
+  is missing. It may be a classification miss or real drying with the north arm
+  below the south arm; it is left as mapped.
 - **Bays:** Farmington and Bear River bays are included only while connected to
   the main lake.
 - **1987:** the outline is cut off where flooded ground west of the lake ran past
@@ -72,9 +105,10 @@ Requires Python with geopandas, pyogrio, shapely ≥ 2.1, numpy and matplotlib.
 ```bash
 cd figures/scripts
 python prep_outlines.py ../../data/outlines/GSL_Landsat_outlines.shp outlines.json ../../data/fall_levels_and_usgs_areas.csv
-python build_viz_data.py outlines.json viz_data.json
+python build_viz_data.py ../../data/outlines/GSL_Landsat_outlines.shp ../../data/fall_levels_and_usgs_areas.csv \
+    outlines.json viz_data.json outlines_fixed.json
 python build_page.py template.html viz_data.json gsl_shorelines.html
-python make_static.py outlines.json GSL_shoreline_stack.png
+python make_static.py outlines_fixed.json GSL_shoreline_stack.png
 ```
 
 ## Data sources
@@ -82,4 +116,4 @@ python make_static.py outlines.json GSL_shoreline_stack.png
 - Landsat Collection 2 Level-2 imagery courtesy of the U.S. Geological Survey, via the
   [Esri Living Atlas Landsat Level-2 layer](https://www.arcgis.com/home/item.html?id=bd6b545b95654d91a0b7faf7b5e010f5).
 - Lake level: USGS gage 10010000, Great Salt Lake at Saltair Boat Harbor (NGVD29).
-- Elevation–area tables: [USGS Great Salt Lake elevation-area-volume tables, 2023](https://www.sciencebase.gov/catalog/item/6467b42fd34ec11ae4a8afb1).
+- Elevation–area tables (also the basis for the water-needed volumes): [USGS Great Salt Lake elevation-area-volume tables, 2023](https://www.sciencebase.gov/catalog/item/6467b42fd34ec11ae4a8afb1).

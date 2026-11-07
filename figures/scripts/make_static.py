@@ -156,7 +156,9 @@ notes = ("Each outline is the typical shoreline over Sep 1–Nov 15, from all cl
          f"Exposed below healthy level = {A_H:,.0f} km² minus that fall's lake area (0 if larger).\n"
          "Includes Farmington and Bear River bays only while connected to the main lake.\n"
          "1987 lobe at lower left: flooded low ground west of the lake, cut off at\n"
-         "the western edge of the area searched."
+         "the western edge of the area searched.\n"
+         "North and south arms joined across the railroad causeway in the drawing.\n"
+         "North arm partly filled from best-matching years: 2012, 2017 (see README)."
          + (f"\nNo outline for {', '.join(map(str, MISSING))} (processing failed)." if MISSING else ""))
 fig.text(0.70, 0.025, notes, fontsize=7.0, color=MUTED, va="bottom", linespacing=1.45)
 fig.savefig(out, dpi=200, facecolor=BG)
