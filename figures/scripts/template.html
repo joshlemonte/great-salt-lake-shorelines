@@ -4,8 +4,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one working view. Rotatable stack on the left, a reading panel on the right
-   (selected year, area-by-year chart, controls), method notes underneath. */
+/* Layout: the 3D stack is the page. Phone: title, three headline numbers, stack, year scrubber,
+   four year tiles, one tabbed chart. Desktop: stack + scrubber on the left, tiles + chart on the right. */
 :root {
   --bg: #f6f7f6;          /* salt-flat white, faintly cool */
   --panel: #ffffff;
@@ -19,6 +19,7 @@
   --div: #9c3a12,#d9581f,#f0a07a,#b3b0a9,#7fb0ee,#2a78d6,#0d366b;  /* level: far below -> 4,198 ft -> far above */
   --ref: #5b6466;         /* healthy-minimum reference line */
   --good: #2f7d4f; --check: #9a6a00; --poor: #b23b3b;
+  --glass: rgba(255,255,255,.86);
   --font: "Public Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
@@ -27,7 +28,7 @@
     --bg: #111415; --panel: #181c1d; --fg: #e8ecea; --muted: #9aa3a5;
     --rule: #2c3335; --grid: #242a2c; --brine: #e58aa0; --lake: #3987e5; --bed: #d95926;
     --div: #f7b48c,#e8743f,#9c4a26,#5d5b56,#1c5cab,#3987e5,#9ec5f4; --ref: #9aa3a5;
-    --good: #6cc191; --check: #e0b44a; --poor: #f08a8a;
+    --good: #6cc191; --check: #e0b44a; --poor: #f08a8a; --glass: rgba(24,28,29,.86);
     color-scheme: dark;
   }
 }
@@ -35,183 +36,230 @@
   --bg: #111415; --panel: #181c1d; --fg: #e8ecea; --muted: #9aa3a5;
   --rule: #2c3335; --grid: #242a2c; --brine: #e58aa0; --lake: #3987e5; --bed: #d95926;
   --div: #f7b48c,#e8743f,#9c4a26,#5d5b56,#1c5cab,#3987e5,#9ec5f4; --ref: #9aa3a5;
-  --good: #6cc191; --check: #e0b44a; --poor: #f08a8a;
+  --good: #6cc191; --check: #e0b44a; --poor: #f08a8a; --glass: rgba(24,28,29,.86);
   color-scheme: dark;
 }
 html, body { background: var(--bg); color: var(--fg); }
-body { font-family: var(--font); font-size: 15px; line-height: 1.5; }
+body { margin: 0; }
+body { font-family: var(--font); font-size: 15px; line-height: 1.45; }
 .wrap {
   max-width: 1320px; margin: 0 auto;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 28px 40px;
-  display: grid; gap: 20px;
+  padding-block: 20px 32px;
+  display: grid; gap: 16px;
 }
-header { display: grid; gap: 6px; }
-.eyebrow { font: 500 12px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-h1 { margin: 0; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.1; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
-.lede { margin: 0; color: var(--muted); max-width: 68ch; }
-.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brine); outline-offset: 2px; }
+
+/* ---- title + headline numbers ---- */
+header { display: grid; gap: 14px; }
+.eyebrow { font: 500 11px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 2px 0 0; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.05; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-block: 1px solid var(--rule); }
+.fact { padding: 10px 12px 10px 0; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.fact + .fact { padding-left: 12px; border-left: 1px solid var(--rule); }
+.fact b { font: 600 clamp(20px, 2.6vw, 28px)/1.05 var(--font); font-variant-numeric: tabular-nums; letter-spacing: -.01em; color: var(--bed); }
+.fact span { font-size: 12px; color: var(--muted); line-height: 1.25; }
+@media (min-width: 900px) {
+  header { grid-template-columns: minmax(0, 1fr) minmax(0, 560px); align-items: end; gap: 24px; }
+}
+
+/* ---- main grid ---- */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
 @media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
-.stage { position: relative; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; min-width: 0; }
-#scene { width: 100%; height: clamp(380px, 68vh, 720px); }
-.hint { position: absolute; left: 14px; bottom: 10px; font: 12px var(--mono); color: var(--muted); pointer-events: none; }
-.left { display: grid; gap: 12px; min-width: 0; }
-.yearbar { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px 12px; display: grid; gap: 8px; min-width: 0; }
-.yb-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.yb-top label { font-size: 13px; font-weight: 600; letter-spacing: .02em; }
-#year-out { font: 600 22px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--fg); }
-#year-out.none { font: 500 13px var(--font); color: var(--muted); }
-input#year { width: 100%; margin: 0; }
+.viz { display: grid; gap: 10px; min-width: 0; }
+
+/* ---- 3D stage ---- */
+.stage { position: relative; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; min-width: 0; overflow: hidden; }
+#scene { width: 100%; height: clamp(340px, 66vh, 740px); }
+@media (max-width: 600px) { #scene { height: clamp(320px, 58vh, 520px); } }
+.ov { position: absolute; pointer-events: none; }
+.ov > * { pointer-events: auto; }
+.ov-year { top: 10px; left: 12px; display: grid; gap: 6px; justify-items: start; }
+.bigyear { font: 700 clamp(30px, 5vw, 46px)/1 var(--font); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.bigyear.range { font-size: clamp(20px, 3vw, 26px); color: var(--muted); font-weight: 600; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.chip { font: 600 12px/1 var(--font); padding: 6px 9px; border-radius: 999px; background: var(--glass); border: 1px solid var(--rule); white-space: nowrap; }
+.chip.dev { display: inline-flex; align-items: center; gap: 6px; }
+.chip.dev i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.chip.btn { cursor: pointer; color: var(--muted); font-weight: 500; }
+.chip.btn:hover { color: var(--fg); border-color: var(--muted); }
+.ov-tools { top: 10px; right: 10px; display: grid; gap: 6px; }
+.tool { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; background: var(--glass); border: 1px solid var(--rule); color: var(--muted); cursor: pointer; padding: 0; }
+.tool:hover { color: var(--fg); border-color: var(--muted); }
+.tool[aria-pressed="true"] { color: var(--brine); border-color: var(--brine); }
+.tool svg { width: 18px; height: 18px; }
+.hint { position: absolute; left: 12px; bottom: 10px; font: 12px var(--mono); color: var(--muted); pointer-events: none; transition: opacity .6s; background: var(--glass); padding: 4px 8px; border-radius: 4px; }
+.hint.gone { opacity: 0; }
+
+/* ---- year scrubber ---- */
+.scrub { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px 6px 10px; }
+.play { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--brine); color: var(--panel); display: grid; place-items: center; cursor: pointer; padding: 0; align-self: start; }
+.play svg { width: 18px; height: 18px; }
+.track { display: grid; gap: 2px; min-width: 0; padding-top: 6px; }
+input#year { width: 100%; margin: 0; height: 28px; accent-color: var(--brine); }
 .yb-ticks { position: relative; height: 16px; font: 11px var(--mono); color: var(--muted); }
 .yb-ticks span { position: absolute; top: 0; transform: translateX(-50%); }
-#cmp-note { margin: 0; font-size: 13px; color: var(--muted); min-height: 1.5em; }
-#cmp-note b { color: var(--fg); font-weight: 600; }
-.key { display: inline-block; width: 18px; vertical-align: middle; margin: 0 4px 0 2px; }
-.key.sel { height: 3px; background: var(--brine); border-radius: 2px; }
-.key.ref { height: 3px; background: var(--ref); border-radius: 2px; }
+
+/* ---- legend ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 12px; color: var(--muted); padding-inline: 2px; }
+.ramp-wrap { display: grid; grid-template-columns: auto 120px auto; gap: 6px; align-items: center; }
+.ramp { height: 8px; border-radius: 2px; }
+.lk { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.lk i { display: inline-block; width: 20px; height: 0; border-top: 2.5px solid var(--muted); }
+.lk i.dash { border-top-style: dashed; }
+.lk i.dot { border-top-style: dotted; border-top-width: 3px; }
+.lk i.sel { border-top-color: var(--brine); border-top-width: 3px; }
+.lk i.ref { border-top-color: var(--ref); border-top-width: 3px; }
+.lk i.wall { height: 10px; border: 0; border-radius: 2px; background: var(--bed); opacity: .35; }
+.cmp-only[hidden] { display: none; }
+
+/* ---- side: tiles + chart ---- */
 aside { display: grid; gap: 16px; min-width: 0; }
-.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
-.card h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--muted); }
-.yr { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.yr .big { font: 600 40px/1 var(--font); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.yearcard { display: grid; gap: 10px; }
+.yc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.yc-head h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
 .pill { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 5px 8px; border-radius: 999px; border: 1px solid currentColor; }
 .pill.good { color: var(--good); } .pill.check { color: var(--check); } .pill.poor { color: var(--poor); }
-dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; }
-dt { color: var(--muted); font-size: 13px; }
-dd { margin: 0; font: 500 14px var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-#area { width: 100%; height: 250px; }
-#need { width: 100%; height: 210px; }
-.cardnote { margin: 0; font-size: 13px; color: var(--muted); }
-dd.sub { grid-column: 1 / -1; font: 12px var(--mono); color: var(--muted); white-space: normal; margin-top: -2px; }
-dd.need { color: var(--bed); font-weight: 600; }
-.series { display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tile { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 12px; display: grid; gap: 3px; align-content: start; min-width: 0; }
+.tile .lbl { font-size: 12px; color: var(--muted); }
+.tile .val { font: 600 22px/1.1 var(--font); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.tile .val small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+.tile .sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tile.warn .val { color: var(--bed); }
+.chartcard { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; padding: 3px; gap: 3px; }
+.tab { border: 0; background: transparent; border-radius: 6px; padding: 8px 6px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.series { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
 .series span { display: inline-flex; align-items: center; gap: 6px; }
-.series i { width: 14px; height: 2px; border-radius: 1px; display: inline-block; }
+.series i { width: 14px; height: 3px; border-radius: 1px; display: inline-block; }
 .series i.dash { height: 0; border-top: 2px dashed var(--ref); background: none; }
-.controls { display: grid; gap: 12px; }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-label { font-size: 13px; color: var(--muted); }
-input[type=range] { width: 150px; accent-color: var(--brine); }
-input[type=checkbox] { accent-color: var(--brine); width: 16px; height: 16px; }
-button {
-  font: 500 13px var(--font); color: var(--fg); background: transparent;
-  border: 1px solid var(--rule); border-radius: 4px; padding: 7px 12px; cursor: pointer;
-}
-button:hover { border-color: var(--muted); }
-:focus-visible { outline: 2px solid var(--brine); outline-offset: 2px; }
-.legend { display: grid; gap: 6px; }
-.ramp { height: 8px; border-radius: 2px; }
-.ramp-labels { display: flex; justify-content: space-between; font: 12px var(--mono); color: var(--muted); }
-footer { color: var(--muted); font-size: 13px; display: grid; gap: 6px; max-width: 92ch; }
-footer p { margin: 0; }
+#area, #need { width: 100%; height: 240px; }
+
+/* ---- about ---- */
+details.about { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 12px; max-width: 80ch; }
+details.about summary { cursor: pointer; font-weight: 600; color: var(--fg); font-size: 13px; }
+details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+
+@media (prefers-reduced-motion: reduce) { .hint { transition: none; } }
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow" id="eyebrow">Landsat surface reflectance · 30 m · fall shoreline</div>
-    <h1>Great Salt Lake Shorelines</h1>
-    <p class="lede" id="lede"></p>
+    <div>
+      <div class="eyebrow">Seen from space · every fall, 1985–2026</div>
+      <h1>Great Salt Lake Shorelines</h1>
+    </div>
+    <div class="facts" id="facts"></div>
   </header>
 
   <div class="main">
-    <div class="left">
+    <div class="viz">
       <div class="stage">
-        <div id="scene" role="img" aria-label="Three-dimensional stack of yearly Great Salt Lake shorelines"></div>
-        <div class="hint">Drag to rotate · scroll to zoom · hover or click a ring</div>
-      </div>
-      <section class="yearbar">
-        <div class="yb-top">
-          <label for="year">Year</label>
-          <output id="year-out" for="year" class="none">All years · drag to pick one</output>
+        <div id="scene" role="img" aria-label="Great Salt Lake's fall shoreline for each year since 1985, stacked from oldest at the bottom to newest at the top"></div>
+        <div class="ov ov-year" aria-live="polite">
+          <div class="bigyear range" id="big-year">1985–2026</div>
+          <div class="chips">
+            <span class="chip dev" id="dev-chip" hidden></span>
+            <button class="chip btn" id="clear" type="button" hidden>✕ All years</button>
+          </div>
         </div>
-        <input type="range" id="year" min="0" max="1" step="1" value="1" aria-describedby="cmp-note">
-        <div class="yb-ticks" id="year-ticks" aria-hidden="true"></div>
-        <p id="cmp-note" aria-live="polite"></p>
-      </section>
+        <div class="ov ov-tools">
+          <button class="tool" id="reset" type="button" aria-label="Reset view" title="Reset view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          </button>
+          <button class="tool" id="fills" type="button" aria-pressed="true" aria-label="Shade the water" title="Shade the water">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>
+          </button>
+        </div>
+        <div class="hint" id="hint">Drag to spin · tap a ring</div>
+      </div>
+
+      <div class="scrub">
+        <button class="play" id="play" type="button" aria-label="Play through the years">
+          <svg id="play-i" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>
+        </button>
+        <div class="track">
+          <input type="range" id="year" min="0" max="1" step="1" value="1" aria-label="Pick a year">
+          <div class="yb-ticks" id="year-ticks" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="legend" aria-label="Legend">
+        <span class="ramp-wrap"><span>Too low</span><span class="ramp" id="ramp"></span><span>Higher</span></span>
+        <span class="lk cmp-off"><i class="dash"></i>Cloudy year</span>
+        <span class="lk cmp-off"><i class="dot"></i>Gap filled in</span>
+        <span class="lk cmp-only" hidden><i class="sel"></i>That fall</span>
+        <span class="lk cmp-only" hidden><i class="ref"></i>Healthy, 4,198 ft</span>
+        <span class="lk cmp-only" hidden><i class="wall" id="wall-key"></i>Missing water</span>
+      </div>
     </div>
 
     <aside>
-      <section class="card" aria-live="polite">
-        <h2 id="readout-label">Selected year</h2>
-        <div class="yr"><span class="big" id="r-year"></span><span class="pill" id="r-q"></span></div>
-        <dl>
-          <dt>Fall lake level</dt><dd id="r-elev"></dd>
-          <dt>vs. healthy minimum</dt><dd id="r-dev"></dd>
-          <dt>Lake area</dt><dd id="r-km"></dd>
-          <dt></dt><dd id="r-mi"></dd>
-          <dt>Area vs. healthy minimum</dt><dd id="r-vs"></dd>
-          <dt>Exposed below healthy level</dt><dd id="r-bed"></dd>
-          <dt id="r-meas-dt" hidden>Area as imaged</dt><dd id="r-meas" hidden></dd>
-          <dt>Water to reach 4,198 ft</dt><dd id="r-need" class="need"></dd>
-          <dd id="r-need2" class="sub"></dd>
-          <dt>Landsat scenes</dt><dd id="r-n"></dd>
-          <dt>Shoreline under cloud</dt><dd id="r-gap"></dd>
-        </dl>
+      <section class="yearcard" aria-live="polite">
+        <div class="yc-head"><h2 id="yc-label">Fall 2026</h2><span class="pill" id="r-q"></span></div>
+        <div class="tiles">
+          <div class="tile"><span class="lbl">Lake level</span><span class="val" id="r-elev"></span><span class="sub" id="r-dev"></span></div>
+          <div class="tile"><span class="lbl">Lake size</span><span class="val" id="r-mi"></span><span class="sub" id="r-vs"></span></div>
+          <div class="tile warn"><span class="lbl">Dry lakebed</span><span class="val" id="r-bed"></span><span class="sub" id="r-bed2"></span></div>
+          <div class="tile warn"><span class="lbl">Water to refill</span><span class="val" id="r-need"></span><span class="sub" id="r-need2"></span></div>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>Area by year (km²)</h2>
-        <div class="series" aria-hidden="true">
-          <span><i style="background: var(--lake)"></i>Lake</span>
-          <span><i style="background: var(--bed)"></i>Lakebed exposed below healthy level</span>
-          <span><i class="dash"></i>Healthy minimum (4,198 ft)</span>
+      <section class="chartcard">
+        <div class="tabs" role="tablist" aria-label="Charts">
+          <button class="tab" role="tab" id="tab-area" aria-controls="pane-area" aria-selected="true" type="button">Lake size</button>
+          <button class="tab" role="tab" id="tab-need" aria-controls="pane-need" aria-selected="false" type="button">Water missing</button>
         </div>
-        <div id="area"></div>
-      </section>
-
-      <section class="card">
-        <h2>Water needed to reach 4,198 ft</h2>
-        <p class="cardnote">Trillion gallons, for each fall below the healthy minimum. One trillion gallons would fill about 1.5 million Olympic swimming pools.</p>
-        <div id="need"></div>
-      </section>
-
-      <section class="card controls">
-        <div class="legend">
-          <h2>Ring color: fall lake level vs. healthy minimum</h2>
-          <div class="ramp" id="ramp"></div>
-          <div class="ramp-labels"><span id="ramp-lo"></span><span>4,198 ft</span><span id="ramp-hi"></span></div>
+        <div id="pane-area" role="tabpanel" aria-labelledby="tab-area">
+          <div class="series" aria-hidden="true">
+            <span><i style="background: var(--lake)"></i>Lake</span>
+            <span><i style="background: var(--bed)"></i>Dry lakebed</span>
+            <span><i class="dash"></i>Healthy size</span>
+            <span>sq mi</span>
+          </div>
+          <div id="area"></div>
         </div>
-        <div class="row">
-          <label for="fills">Water fill</label>
-          <input type="checkbox" id="fills" checked>
-        </div>
-        <div class="row">
-          <button id="reset" type="button">Reset view</button>
-          <button id="clear" type="button">Clear selection</button>
+        <div id="pane-need" role="tabpanel" aria-labelledby="tab-need" hidden>
+          <div class="series" aria-hidden="true">
+            <span><i style="background: var(--bed)"></i>Water to reach 4,198 ft</span>
+            <span>trillion gallons</span>
+          </div>
+          <div id="need"></div>
         </div>
       </section>
     </aside>
   </div>
 
-  <footer>
-    <p>Each ring is that year's typical shoreline from September 1 to November 15, classified from every clear Landsat look (MNDWI with a per-scene Otsu threshold, cloud masked pixel by pixel). Dashed rings and open circles mark years where cloud gaps touch more than 10% of the shoreline.</p>
-    <p id="fill-note"></p>
-    <p id="need-note"></p>
-    <p id="bed-note"></p>
-    <p>Choosing a year stands its shoreline up: the gray ring at that year's place in the stack marks the 4,198 ft healthy minimum (drawn with the best-imaged year closest to that level), the year's own shoreline is moved down or up by its fall level difference, and the shaded wall fills the gap. Vertical scale in this mode is 1 ft of lake level per year of stack height.</p>
-    <p>Farmington and Bear River bays are included only while connected to the main lake. The 1987 lobe on the west side is flooded low ground; it is cut where it ran past the western edge of the area searched.</p>
-    <p id="src-note"></p>
-  </footer>
+  <details class="about">
+    <summary>About the data</summary>
+    <ul>
+      <li>Each ring is the average fall shoreline (Sep 1 – Nov 15), traced from cloud-free Landsat images.</li>
+      <li>Healthy range starts at 4,198 ft (Utah DNR). Lake level from the USGS Saltair gauge.</li>
+      <li>Water needed comes from USGS lakebed volume tables. No outline for 2025.</li>
+      <li>Sources: USGS Landsat via Esri Living Atlas, processed in ArcGIS Pro; USGS lake levels.</li>
+    </ul>
+  </details>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 <script id="data" type="application/json">__DATA__</script>
+
 <script>
 (function () {
   const RAW = JSON.parse(document.getElementById("data").textContent);
-  const DATA = RAW.years, LEVELS = RAW.levels;
-  const needEl = document.getElementById("need");
-  const sceneEl = document.getElementById("scene");
-  const areaEl = document.getElementById("area");
+  const DATA = RAW.years, LEVELS = RAW.levels, HEALTHY = RAW.healthy;
+  const $ = id => document.getElementById(id);
+  const needEl = $("need"), sceneEl = $("scene"), areaEl = $("area");
   const years = DATA.map(d => d.year);
-  const areas = DATA.map(d => d.area_km2);
-  const beds = DATA.map(d => d.exposed_km2);
-  const HEALTHY = JSON.parse(document.getElementById("data").textContent).healthy;
-  const A_H = HEALTHY.area_km2, DEV_SPAN = 12;   // ring color saturates at ±12 ft
-  // years with no outline: break the area lines there instead of bridging them
-  const MISSING = [];
-  for (let y = years[0]; y <= years[years.length - 1]; y++) if (!years.includes(y)) MISSING.push(y);
+  const KM2_MI2 = 2.589988;
+  const areas = DATA.map(d => d.area_mi2);
+  const beds = DATA.map(d => d.exposed_mi2);
+  const A_H = HEALTHY.area_km2 / KM2_MI2, DEV_SPAN = 12;   // healthy lake size (sq mi); ring color saturates at ±12 ft
   const gapped = vals => { const xs = [], ys = [];
     years.forEach((y, i) => { if (i && y - years[i - 1] > 1) { xs.push(y - 0.5); ys.push(null); } xs.push(y); ys.push(vals[i]); });
     return [xs, ys]; };
@@ -219,61 +267,40 @@ footer p { margin: 0; }
   const iMin = areas.indexOf(Math.min(...areas));
   const N = DATA.length;
   const fmt = n => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
-  // water needed to reach 4,198 ft, in units people can picture
+  const fmt1 = n => n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const lowHigh = v => Math.abs(v) < 0.05 ? "At healthy level" : `${Math.abs(v).toFixed(1)} ft ${v < 0 ? "too low" : "above healthy"}`;
   const galText = g => g >= 1e12 ? `${(g / 1e12).toFixed(1)} trillion gallons` : `${fmt(Math.round(g / 1e10) * 10)} billion gallons`;
+  const galShort = g => g >= 1e12 ? [(g / 1e12).toFixed(1), "trillion gal"] : [fmt(Math.round(g / 1e10) * 10), "billion gal"];
   const poolsText = p => p >= 1e6 ? `${(p / 1e6).toFixed(1)} million` : fmt(Math.round(p / 1e4) * 1e4);
   const afText = a => a >= 1e6 ? `${(a / 1e6).toFixed(1)} million acre-ft` : `${fmt(Math.round(a / 1e4) * 1e4)} acre-ft`;
   const PATCH = DATA.map((d, i) => (d.px ? i : -1)).filter(i => i >= 0);
   const fullX = d => (d.px ? d.x.concat([null], d.px) : d.x);
   const fullY = d => (d.py ? d.y.concat([null], d.py) : d.y);
+  const narrow = () => matchMedia("(max-width: 600px)").matches;
 
-  // extents for the aspect ratio
   let xs = [], ys = [];
   DATA.forEach(d => d.x.forEach((v, k) => { if (v !== null) { xs.push(v); ys.push(d.y[k]); } }));
   const xr = [Math.min(...xs), Math.max(...xs)], yr = [Math.min(...ys), Math.max(...ys)];
   const yAspect = (yr[1] - yr[0]) / (xr[1] - xr[0]);
   xs = ys = null;
 
-  // the current run of years below the healthy minimum
+  // headline numbers
   let since = null;
   for (let i = N - 1; i >= 0 && DATA[i].dev_ft < 0; i--) since = DATA[i].year;
-  const nBelow = DATA.filter(d => d.dev_ft < 0).length;
   const lowest = DATA.reduce((a, b) => (b.dev_ft < a.dev_ft ? b : a));
-  document.getElementById("lede").textContent =
-    `${years[0]}–${years[N - 1]}. Each ring is one fall's shoreline, stacked from oldest at the bottom to newest at the top, ` +
-    `and colored by how far that fall's lake level sat above or below the 4,198 ft healthy minimum. ` +
-    `The lake was below it in ${nBelow} of ${N} falls` + (since ? `, and every fall since ${since}` : "") +
-    `; in ${lowest.year} it was ${Math.abs(lowest.dev_ft).toFixed(1)} ft below, with ${fmt(lowest.exposed_km2)} km² of healthy-level lakebed dry. ` +
-    `Refilling it from that low to 4,198 ft would take about ${galText(lowest.need.gal)} of water, enough to fill ${poolsText(lowest.need.pools)} Olympic swimming pools.`;
-  document.getElementById("fill-note").textContent =
-    `The railroad causeway splits the lake into north and south arms. Where the two arms' outlines meet along it, they are joined in the drawing, ` +
-    `so the causeway no longer shows as a straight line across the lake; areas are unchanged. Every lake part is now filled, including the north arm in years when it was a separate polygon. ` +
-    `Dotted shoreline was filled in, not imaged: ` +
-    PATCH.map(i => { const d = DATA[i]; return `${d.year}, ${d.filled_note} (${fmt(d.area_measured_km2)} km² as imaged, about ${fmt(d.area_km2)} km² filled)`; }).join("; ") +
-    `. The readout and area chart use the filled areas for these years, shown as diamonds.`;
-  document.getElementById("need-note").textContent =
-    `Water needed is the lake volume between that fall's level and 4,198 ft: the USGS bathymetric lake area at each fall level (Great Salt Lake elevation-area-volume tables), ` +
-    `integrated over elevation. It assumes the whole lake rises to 4,198 ft at the south-arm Saltair gage; the north arm usually sits lower, so the true amount is somewhat larger. ` +
-    `From 4,191 ft this gives about 5.2 million acre-feet, in line with published estimates of roughly 5 million. ` +
-    `One acre-foot is 325,851 gallons; an Olympic pool (50 × 25 × 2 m) holds about 660,000 gallons. 2025 has a gage level but no outline, so it appears only in the water chart.`;
-  document.getElementById("bed-note").textContent =
-    `Healthy minimum: 4,198 ft, about ${fmt(A_H)} km² of lake. That area is the Landsat area expected at 4,198 ft, from a straight-line fit of these outlines' areas ` +
-    `against fall lake level for the ${HEALTHY.fit_n} years within 3 ft of it (${fmt(HEALTHY.fit_slope_km2_per_ft)} km² per ft), so it uses the same method as the rings. ` +
-    `USGS bathymetry gives 3,684 km² at 4,198 ft; these Landsat areas run about 5% above the bathymetric areas. ` +
-    `Lakebed exposed below the healthy level is ${fmt(A_H)} km² minus that fall's lake area, and zero when the lake is larger. ` +
-    `Fall lake level is the September 1 to November 15 mean at the Saltair gage (USGS 10010000), NGVD29; 2026 runs through November 4.`;
-  document.getElementById("src-note").textContent =
-    `Data: USGS Landsat Collection 2 Level-2 via Esri Living Atlas. Outlines processed in ArcGIS Pro. Area is geodesic.` +
-    (MISSING.length ? ` No outline for ${MISSING.join(", ")} (processing failed); the area lines break there.` : "");
+  const facts = [
+    ["Too low every fall since", String(since)],
+    [`Short of healthy at the ${lowest.year} low`, `${Math.abs(lowest.dev_ft).toFixed(1)} ft`],
+    [`Gallons to refill it in ${lowest.year}`, galShort(lowest.need.gal)[0] + " " + galShort(lowest.need.gal)[1].replace(" gal", "")]
+  ];
+  $("facts").innerHTML = facts.map(([l, v]) => `<div class="fact"><span>${l}</span><b>${v}</b></div>`).join("");
 
   const css = () => getComputedStyle(document.documentElement);
   function tokens() {
-    const s = css();
-    const g = n => s.getPropertyValue(n).trim();
+    const s = css(), g = n => s.getPropertyValue(n).trim();
     return { bg: g("--bg"), panel: g("--panel"), fg: g("--fg"), muted: g("--muted"), rule: g("--rule"),
       grid: g("--grid"), brine: g("--brine"), lake: g("--lake"), bed: g("--bed"), ref: g("--ref"),
-      div: g("--div").split(",").map(t => t.trim()),
-      font: g("--font"), mono: g("--mono") };
+      div: g("--div").split(",").map(t => t.trim()), font: g("--font"), mono: g("--mono") };
   }
   function hexRgb(h) { h = h.replace("#", ""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
   function rampColor(ramp, t) {
@@ -283,29 +310,24 @@ footer p { margin: 0; }
     return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
   }
   const devColor = d => rampColor(T.div, (d.dev_ft + DEV_SPAN) / (2 * DEV_SPAN));
-  const sgn = (v, digits = 0, unit = "") => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })}${unit}`;
 
   let T = tokens();
-  let selected = null;   // pinned index
-  let hovered = null;
-  let fillsOn = true;
+  let selected = null, hovered = null, fillsOn = true;
   const DEFAULT_CAM = { eye: { x: 0.95, y: -1.1, z: 0.62 }, center: { x: 0, y: 0, z: -0.1 }, up: { x: 0, y: 0, z: 1 } };
-  const P0 = 2 * N + 4;         // first filled-shoreline trace
-  const STACK_Z = 0.7;          // stack height (aspect ratio)
-  const FT_TO_Z = 1;            // comparison mode: 1 ft of lake level = 1 year of stack height
-  const fmt1 = n => n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  // reference shoreline for the healthy minimum: the best-imaged year whose fall level is closest to 4,198 ft
+  const MOBILE_CAM = { eye: { x: 1.15, y: -1.35, z: 0.75 }, center: { x: 0, y: 0, z: -0.1 }, up: { x: 0, y: 0, z: 1 } };
+  const homeCam = () => (narrow() ? MOBILE_CAM : DEFAULT_CAM);
+  const P0 = 2 * N + 4;
+  const STACK_Z = 0.7;
+  const FT_TO_Z = 1;
   const REF = DATA.reduce((a, d, i) =>
     (d.quality === "good" && (a === null || Math.abs(d.dev_ft) < Math.abs(DATA[a].dev_ft)) ? i : a), null) ?? 0;
-  // z range covers the stack and every year's dropped (or raised) shoreline, so selecting never rescales the view
   const zVals = DATA.flatMap(d => [d.year, d.year + d.dev_ft * FT_TO_Z]);
   const Z_RANGE = [Math.min(...zVals) - 0.5, Math.max(...zVals) + 0.5];
 
   function lineStyle(i) {
-    const d = DATA[i];
-    const base = devColor(d);
+    const base = devColor(DATA[i]);
     if (selected !== null) {
-      if (i === selected) return { color: T.brine, width: 2, opacity: 0 };   // drawn by the comparison traces instead
+      if (i === selected) return { color: T.brine, width: 2, opacity: 0 };
       if (i === hovered) return { color: T.brine, width: 4, opacity: 0.9 };
       return { color: base, width: 2, opacity: 0.15 };
     }
@@ -313,7 +335,7 @@ footer p { margin: 0; }
     return { color: base, width: (i === iMax || i === iMin) ? 5 : 2.5, opacity: 1 };
   }
 
-  // ---- comparison mode: selected shoreline as a vertical curtain against the healthy minimum ----
+  // ---- comparison: selected shoreline lifted to its real level against the healthy minimum ----
   function curtain(d, za, zb) {
     const x = [], y = [], z = [], I = [], J = [], K = [];
     let prev = -1;
@@ -329,7 +351,7 @@ footer p { margin: 0; }
   function compData() {
     if (selected === null) return null;
     const d = DATA[selected], r = DATA[REF];
-    const z0 = d.year, z1 = d.year + d.dev_ft * FT_TO_Z;   // z0: healthy-minimum plane at this year's slot; z1: actual level
+    const z0 = d.year, z1 = d.year + d.dev_ft * FT_TO_Z;
     return {
       d, r, z0, z1,
       ref: { x: r.x, y: r.y, z: r.x.map(v => v === null ? null : z0) },
@@ -343,18 +365,16 @@ footer p { margin: 0; }
     const c = compData(), on = !!c;
     return [
       { type: "scatter3d", mode: "lines", x: on ? c.ref.x : [], y: on ? c.ref.y : [], z: on ? c.ref.z : [],
-        connectgaps: false, line: { color: T.ref, width: 5, dash: "solid" }, hoverinfo: "skip", showlegend: false,
-        visible: on, name: "healthy reference" },
+        connectgaps: false, line: { color: T.ref, width: 5, dash: "solid" }, hoverinfo: "skip", showlegend: false, visible: on },
       { type: "scatter3d", mode: "lines", x: on ? c.sel.x : [], y: on ? c.sel.y : [], z: on ? c.sel.z : [],
         connectgaps: false, line: { color: T.brine, width: 7, dash: on ? c.sel.dash : "solid" }, hoverinfo: "skip",
-        showlegend: false, visible: on, name: "selected at level" },
+        showlegend: false, visible: on },
       { type: "mesh3d", x: on ? c.cur.x : [], y: on ? c.cur.y : [], z: on ? c.cur.z : [],
         i: on ? c.cur.i : [], j: on ? c.cur.j : [], k: on ? c.cur.k : [],
         color: on ? c.cur.color : T.brine, opacity: 0.2, flatshading: true, lighting: LIGHT_FLAT,
-        hoverinfo: "skip", showscale: false, visible: on, name: "curtain" },
+        hoverinfo: "skip", showscale: false, visible: on },
       { type: "scatter3d", mode: "lines", x: on ? c.selp.x : [], y: on ? c.selp.y : [], z: on ? c.selp.z : [],
-        connectgaps: false, line: { color: T.brine, width: 6, dash: "dot" }, hoverinfo: "skip",
-        showlegend: false, visible: on, name: "selected, filled shoreline" }
+        connectgaps: false, line: { color: T.brine, width: 6, dash: "dot" }, hoverinfo: "skip", showlegend: false, visible: on }
     ];
   }
   function compAnnotations(c) {
@@ -364,13 +384,12 @@ footer p { margin: 0; }
       o.x.forEach((v, k) => { if (v !== null && (b < 0 || (east ? v > o.x[b] : v < o.x[b]))) b = k; });
       return { x: o.x[b], y: o.y[b], z };
     };
+    const off = narrow() ? 22 : 40;
     const base = { showarrow: true, arrowhead: 0, arrowwidth: 1, arrowcolor: T.muted, bgcolor: T.panel, bordercolor: T.rule,
-      borderpad: 4, ay: 0, font: { family: T.font, size: 12, color: T.fg }, align: "left" };
+      borderpad: 3, ay: 0, font: { family: T.font, size: 11, color: T.fg } };
     return [
-      { ...base, ...extreme(c.r, c.z0, false), ax: -46, xanchor: "right",
-        text: `4,198 ft healthy minimum<br><span style="color:${T.muted}">gray ring: ${c.r.year} shoreline, ${fmt1(c.r.elev_ft)} ft</span>` },
-      { ...base, ...extreme(c.d, c.z1, true), ax: 46, xanchor: "left",
-        text: `<b>${c.d.year}</b> · ${fmt1(c.d.elev_ft)} ft<br><span style="color:${T.muted}">${sgn(c.d.dev_ft, 1, " ft")} vs. healthy</span>` }
+      { ...base, ...extreme(c.r, c.z0, false), ax: -off, xanchor: "right", text: "Healthy" },
+      { ...base, ...extreme(c.d, c.z1, true), ax: off, xanchor: "left", text: `<b>${c.d.year}</b>` }
     ];
   }
 
@@ -380,28 +399,23 @@ footer p { margin: 0; }
       const st = lineStyle(i);
       tr.push({
         type: "scatter3d", mode: "lines", x: d.x, y: d.y, z: d.x.map(v => v === null ? null : d.year),
-        connectgaps: false,
-        line: { color: st.color, width: st.width, dash: d.quality === "poor" ? "dash" : "solid" },
-        text: `${d.year}`, customdata: d.x.map(() => i),
-        hovertemplate: `<b>${d.year}</b><br>${d.elev_ft.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ft (${sgn(d.dev_ft, 1, " ft")})<br>${fmt(d.area_km2)} km²<extra></extra>`,
+        connectgaps: false, line: { color: st.color, width: st.width, dash: d.quality === "poor" ? "dash" : "solid" },
+        hovertemplate: `<b>Fall ${d.year}</b><br>${lowHigh(d.dev_ft)}<br>${fmt(d.area_mi2)} sq mi<extra></extra>`,
         showlegend: false, name: String(d.year)
       });
     });
-    DATA.forEach((d, i) => {
+    DATA.forEach(d => {
       tr.push({
         type: "mesh3d", x: d.fx, y: d.fy, z: d.fx.map(() => d.year), i: d.i, j: d.j, k: d.k,
-        color: devColor(d), opacity: 0.07, flatshading: true,
-        lighting: { ambient: 1, diffuse: 0, specular: 0, roughness: 1, fresnel: 0 },
-        hoverinfo: "skip", showscale: false, visible: fillsOn, name: `fill ${d.year}`
+        color: devColor(d), opacity: 0.07, flatshading: true, lighting: LIGHT_FLAT,
+        hoverinfo: "skip", showscale: false, visible: fillsOn
       });
     });
     tr.push(...compTraces());   // trace indices 2N .. 2N+3
-    // shoreline filled in rather than imaged, dotted (trace indices P0 ..)
     PATCH.forEach(i => {
       const d = DATA[i], st = lineStyle(i);
       tr.push({ type: "scatter3d", mode: "lines", x: d.px, y: d.py, z: d.px.map(v => v === null ? null : d.year),
-        connectgaps: false, line: { color: st.color, width: st.width, dash: "dot" }, hoverinfo: "skip",
-        showlegend: false, name: `filled ${d.year}` });
+        connectgaps: false, line: { color: st.color, width: st.width, dash: "dot" }, hoverinfo: "skip", showlegend: false });
     });
     return tr;
   }
@@ -416,24 +430,21 @@ footer p { margin: 0; }
   }
 
   function sceneLayout(camera) {
-    const z = STACK_Z;
     const zt = zTicks();
     const hidden = { visible: true, showticklabels: false, title: { text: "" }, showgrid: false,
-      zeroline: false, showline: false, showbackground: false, showspikes: false, range: undefined };
+      zeroline: false, showline: false, showbackground: false, showspikes: false };
     return {
       paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
       margin: { l: 0, r: 0, t: 0, b: 0 },
       font: { family: T.font, color: T.muted, size: 12 },
       hoverlabel: { bgcolor: T.panel, bordercolor: T.rule, font: { family: T.mono, color: T.fg, size: 12 } },
       scene: {
-        aspectmode: "manual", aspectratio: { x: 1, y: yAspect, z },
+        aspectmode: "manual", aspectratio: { x: 1, y: yAspect, z: STACK_Z },
         xaxis: { ...hidden, range: xr }, yaxis: { ...hidden, range: yr },
-        zaxis: {
-          title: { text: "" }, range: Z_RANGE,
-          tickvals: zt.vals, ticktext: zt.text, tickfont: { family: T.mono, size: 11, color: T.muted },
-          gridcolor: T.grid, showbackground: false, zeroline: false, showspikes: false, linecolor: T.rule
-        },
-        camera: camera || DEFAULT_CAM, dragmode: "turntable",
+        zaxis: { title: { text: "" }, range: Z_RANGE, tickvals: zt.vals, ticktext: zt.text,
+          tickfont: { family: T.mono, size: 11, color: T.muted },
+          gridcolor: T.grid, showbackground: false, zeroline: false, showspikes: false, linecolor: T.rule },
+        camera: camera || homeCam(), dragmode: "turntable",
         annotations: compAnnotations(compData())
       }
     };
@@ -446,123 +457,100 @@ footer p { margin: 0; }
         connectgaps: false, hoverinfo: "skip", showlegend: false },
       { type: "scatter", mode: "markers", x: years, y: areas,
         marker: {
-          size: years.map((_, i) => i === focus ? 12 : 8),
+          size: years.map((_, i) => i === focus ? 12 : 7),
           symbol: DATA.map(d => d.px ? "diamond" : "circle"),
           color: DATA.map((d, i) => d.quality === "poor" ? T.panel : (i === focus ? T.brine : devColor(d))),
-          line: { width: DATA.map((d, i) => d.quality === "poor" ? 2 : 1.5),
+          line: { width: DATA.map(d => d.quality === "poor" ? 2 : 1.5),
                   color: DATA.map((d, i) => d.quality === "poor" ? (i === focus ? T.brine : devColor(d)) : T.panel) }
         },
-        hovertemplate: "<b>%{x}</b> lake<br>%{y:,.0f} km²<extra></extra>", showlegend: false },
+        hovertemplate: "<b>Fall %{x}</b><br>lake: %{y:,.0f} sq mi<extra></extra>", showlegend: false },
       { type: "scatter", mode: "lines", x: [years[0] - 1, years[N - 1] + 1], y: [A_H, A_H],
         line: { color: T.ref, width: 1.5, dash: "dash" }, hoverinfo: "skip", showlegend: false },
       { type: "scatter", mode: "lines", x: gapped(beds)[0], y: gapped(beds)[1], line: { color: T.bed, width: 2 },
         connectgaps: false, hoverinfo: "skip", showlegend: false },
       { type: "scatter", mode: "markers", x: years, y: beds,
-        marker: { size: years.map((_, i) => i === focus ? 10 : 6),
-                  color: years.map((_, i) => i === focus ? T.brine : T.bed),
-                  line: { width: 1.5, color: T.panel } },
-        hovertemplate: "<b>%{x}</b> exposed below healthy level<br>%{y:,.0f} km²<extra></extra>", showlegend: false }
+        marker: { size: years.map((_, i) => i === focus ? 10 : 5),
+                  color: years.map((_, i) => i === focus ? T.brine : T.bed), line: { width: 1.5, color: T.panel } },
+        hovertemplate: "<b>Fall %{x}</b><br>dry lakebed: %{y:,.0f} sq mi<extra></extra>", showlegend: false }
     ];
   }
+  const axisX = (hi) => ({ showgrid: false, zeroline: false, linecolor: T.rule, ticks: "", dtick: 10, tick0: 1990, tickangle: 0,
+    fixedrange: true, range: [years[0] - 1, hi + 1] });
+  const baseLayout = () => ({
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    margin: { l: 42, r: 10, t: 6, b: 26 }, font: { family: T.mono, color: T.muted, size: 11 },
+    hovermode: "closest",
+    hoverlabel: { bgcolor: T.panel, bordercolor: T.rule, font: { family: T.mono, color: T.fg, size: 12 } }
+  });
   function areaLayout() {
-    return {
-      paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
-      margin: { l: 46, r: 62, t: 6, b: 28 }, font: { family: T.mono, color: T.muted, size: 11 },
-      hovermode: "closest",
-      hoverlabel: { bgcolor: T.panel, bordercolor: T.rule, font: { family: T.mono, color: T.fg, size: 12 } },
-      xaxis: { showgrid: false, zeroline: false, linecolor: T.rule, ticks: "", dtick: 10, tick0: 1990, tickangle: 0, fixedrange: true,
-               range: [years[0] - 1, years[N - 1] + 1] },
+    return { ...baseLayout(), xaxis: axisX(years[N - 1]),
       yaxis: { gridcolor: T.grid, zeroline: false, showline: false, tickformat: ",", fixedrange: true,
-               dtick: 1000, range: [0, Math.ceil((Math.max(...areas) + 300) / 1000) * 1000] },
-      annotations: [
-        { x: years[N - 1] + 1, y: A_H, text: "Healthy minimum", xanchor: "right", yanchor: "bottom", yshift: 1,
-          showarrow: false, font: { family: T.font, size: 11, color: T.muted } },
-        { x: years[N - 1], y: areas[N - 1], text: "Lake", xanchor: "left", yanchor: "middle", xshift: 8,
-          showarrow: false, font: { family: T.font, size: 12, color: T.fg } },
-        { x: years[N - 1], y: beds[N - 1], text: "Exposed", xanchor: "left", yanchor: "middle", xshift: 8,
-          showarrow: false, font: { family: T.font, size: 12, color: T.fg } }
-      ]
-    };
+               dtick: 500, range: [0, Math.ceil((Math.max(...areas) + 100) / 500) * 500] } };
   }
-
   function needTraces() {
     const fy = (hovered ?? selected) !== null ? DATA[hovered ?? selected].year : null;
     const L = LEVELS.filter(l => l.need);
     return [{
       type: "bar", x: L.map(l => l.year), y: L.map(l => l.need.gal / 1e12),
       marker: { color: L.map(l => l.year === fy ? T.brine : T.bed), line: { width: 0 } },
-      customdata: L.map(l => [galText(l.need.gal), poolsText(l.need.pools), afText(l.need.af), sgn(l.dev_ft, 1, " ft")]),
-      hovertemplate: "<b>%{x}</b> · %{customdata[3]} vs. 4,198 ft<br>%{customdata[0]}<br>%{customdata[1]} Olympic pools<br>%{customdata[2]}<extra></extra>",
+      customdata: L.map(l => [galText(l.need.gal), poolsText(l.need.pools), afText(l.need.af), lowHigh(l.dev_ft)]),
+      hovertemplate: "<b>Fall %{x}</b> · %{customdata[3]}<br>%{customdata[0]}<br>≈ %{customdata[1]} Olympic pools<extra></extra>",
       showlegend: false
     }];
   }
   function needLayout() {
     const L = LEVELS.filter(l => l.need), top = Math.max(...L.map(l => l.need.gal / 1e12));
     const firstBelow = Math.min(...L.map(l => l.year));
-    return {
-      paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
-      margin: { l: 46, r: 62, t: 6, b: 28 }, font: { family: T.mono, color: T.muted, size: 11 },
-      hovermode: "closest", bargap: 0.2,
-      hoverlabel: { bgcolor: T.panel, bordercolor: T.rule, font: { family: T.mono, color: T.fg, size: 12 } },
-      xaxis: { showgrid: false, zeroline: false, linecolor: T.rule, ticks: "", dtick: 10, tick0: 1990, tickangle: 0, fixedrange: true,
-               range: [years[0] - 1, Math.max(years[N - 1], LEVELS[LEVELS.length - 1].year) + 1] },
+    return { ...baseLayout(), bargap: 0.2,
+      xaxis: axisX(Math.max(years[N - 1], LEVELS[LEVELS.length - 1].year)),
       yaxis: { gridcolor: T.grid, zeroline: false, showline: false, fixedrange: true, dtick: 0.5, tickformat: ".1f",
                range: [0, Math.ceil(top * 2 + 0.2) / 2] },
       annotations: [{ x: (years[0] + firstBelow) / 2 - 1, y: 0, yanchor: "bottom", yshift: 4, showarrow: false,
-                      text: "Above 4,198 ft", font: { family: T.font, size: 11, color: T.muted } }]
-    };
+                      text: "Healthy years", font: { family: T.font, size: 11, color: T.muted } }] };
   }
 
   function renderReadout() {
     const i = hovered ?? selected ?? N - 1;
     const d = DATA[i];
-    document.getElementById("readout-label").textContent =
-      (hovered ?? selected) === null ? "Most recent year" : (selected !== null && hovered === null ? "Pinned year" : "Selected year");
-    document.getElementById("r-year").textContent = d.year;
-    const q = document.getElementById("r-q");
-    q.textContent = d.quality; q.className = "pill " + d.quality;
-    document.getElementById("r-elev").textContent = `${d.elev_ft.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ft`;
-    document.getElementById("r-dev").textContent = sgn(d.dev_ft, 1, " ft");
-    document.getElementById("r-km").textContent = `${fmt(d.area_km2)} km²`;
-    document.getElementById("r-mi").textContent = `${fmt(d.area_mi2)} mi²`;
-    document.getElementById("r-vs").textContent = `${sgn(d.vs_healthy_km2, 0, " km²")} (${sgn(d.vs_healthy_km2 / A_H * 100, 0, "%")})`;
-    document.getElementById("r-bed").textContent = `${fmt(d.exposed_km2)} km²`;
-    const meas = d.area_measured_km2 != null;
-    document.getElementById("r-meas-dt").hidden = document.getElementById("r-meas").hidden = !meas;
-    if (meas) document.getElementById("r-meas").textContent = `${fmt(d.area_measured_km2)} km²`;
-    document.getElementById("r-need").textContent = d.need ? galText(d.need.gal) : "None, at or above";
-    document.getElementById("r-need2").textContent = d.need ? `≈ ${poolsText(d.need.pools)} Olympic pools · ${afText(d.need.af)}` : "";
-    document.getElementById("r-n").textContent = `${d.n_scenes} (${d.sensors.replace(/LT0/g, "L").replace(/LE0/g, "L").replace(/LC0/g, "L")})`;
-    document.getElementById("r-gap").textContent = `${d.edge_gap.toFixed(1)}%`;
+    $("yc-label").textContent = (hovered ?? selected) === null ? `Latest · fall ${d.year}` : `Fall ${d.year}`;
+    const q = $("r-q");
+    q.textContent = { good: "Clear view", check: "Some clouds", poor: "Cloudy" }[d.quality] || d.quality;
+    q.className = "pill " + d.quality;
+    $("r-elev").innerHTML = `${fmt1(d.elev_ft)}<small>ft</small>`;
+    $("r-dev").textContent = lowHigh(d.dev_ft);
+    $("r-mi").innerHTML = `${fmt(d.area_mi2)}<small>sq mi</small>`;
+    const pct = (d.area_mi2 - A_H) / A_H * 100;
+    $("r-vs").textContent = Math.abs(pct) < 0.5 ? "Healthy size" : `${Math.abs(pct).toFixed(0)}% ${pct < 0 ? "smaller" : "larger"} than healthy`;
+    $("r-bed").innerHTML = d.exposed_mi2 > 0 ? `${fmt(d.exposed_mi2)}<small>sq mi</small>` : "None";
+    $("r-bed2").textContent = d.exposed_mi2 > 0 ? "underwater when healthy" : "";
+    if (d.need) { const [v, u] = galShort(d.need.gal); $("r-need").innerHTML = `${v}<small>${u}</small>`; }
+    else $("r-need").textContent = "None";
+    $("r-need2").textContent = d.need ? `≈ ${poolsText(d.need.pools)} Olympic pools` : "";
   }
 
-  function renderYearBar() {
-    const out = document.getElementById("year-out"), note = document.getElementById("cmp-note");
-    if (selected === null) {
-      out.textContent = "All years · drag to pick one"; out.className = "none";
-      note.textContent = "Pick a year to stand its shoreline up against the 4,198 ft healthy minimum.";
+  function renderOverlay() {
+    const big = $("big-year"), chip = $("dev-chip"), clear = $("clear");
+    const cmp = selected !== null;
+    document.querySelectorAll(".cmp-only").forEach(e => (e.hidden = !cmp));
+    document.querySelectorAll(".cmp-off").forEach(e => (e.hidden = cmp));
+    if (!cmp) {
+      big.textContent = `${years[0]}–${years[N - 1]}`; big.className = "bigyear range";
+      chip.hidden = clear.hidden = true;
       return;
     }
-    const d = DATA[selected], r = DATA[REF];
-    out.textContent = d.year; out.className = "";
-    note.innerHTML =
-      `<span class="key sel"></span><b>${d.year}</b> shoreline drawn at its fall level, ` +
-      `<b>${fmt1(Math.abs(d.dev_ft))} ft ${d.dev_ft < 0 ? "below" : "above"}</b> the healthy minimum; ` +
-      `the shaded wall spans the difference. <span class="key ref"></span>Gray ring: ${r.year} shoreline ` +
-      `(${fmt1(r.elev_ft)} ft), the best-imaged year closest to 4,198 ft. Vertical scale: 1 ft of level = 1 year of stack.` +
-      (d.need ? ` Raising the lake to 4,198 ft would take about <b>${galText(d.need.gal)}</b> of water, enough to fill ${poolsText(d.need.pools)} Olympic swimming pools.`
-              : ` The lake was above the healthy minimum that fall.`) +
-      (d.px ? ` Dotted shoreline was filled in, not imaged.` : "");
+    const d = DATA[selected];
+    big.textContent = d.year; big.className = "bigyear";
+    chip.innerHTML = `<i style="background:${devColor(d)}"></i>${lowHigh(d.dev_ft)}`;
+    chip.hidden = clear.hidden = false;
+    $("wall-key").style.background = devColor(d);
   }
 
   function updateComparison() {
     const c = compData(), on = !!c;
     Plotly.restyle(sceneEl, {
-      x: [on ? c.ref.x : [], on ? c.sel.x : []],
-      y: [on ? c.ref.y : [], on ? c.sel.y : []],
+      x: [on ? c.ref.x : [], on ? c.sel.x : []], y: [on ? c.ref.y : [], on ? c.sel.y : []],
       z: [on ? c.ref.z : [], on ? c.sel.z : []],
-      "line.dash": ["solid", on ? c.sel.dash : "solid"],
-      visible: [on, on]
+      "line.dash": ["solid", on ? c.sel.dash : "solid"], visible: [on, on]
     }, [2 * N, 2 * N + 1]);
     Plotly.restyle(sceneEl, { x: [on ? c.selp.x : []], y: [on ? c.selp.y : []], z: [on ? c.selp.z : []], visible: [on] }, [2 * N + 3]);
     Plotly.update(sceneEl, {
@@ -572,83 +560,121 @@ footer p { margin: 0; }
     }, { "scene.annotations": compAnnotations(c) }, [2 * N + 2]);
   }
 
-  const yearIn = document.getElementById("year");
+  const yearIn = $("year");
   function setSelected(i) {
     selected = i; hovered = null;
     yearIn.value = i !== null ? i : N - 1;
-    renderYearBar();
+    renderOverlay();
     updateComparison();
     applyFocus();
   }
 
+  const CFG = { displayModeBar: false, responsive: true };
+  function drawCharts() {
+    Plotly.react(areaEl, areaTraces(), areaLayout(), CFG);
+    Plotly.react(needEl, needTraces(), needLayout(), CFG);
+  }
   function applyFocus() {
     const idx = DATA.map((_, i) => i).concat(PATCH.map((_, k) => P0 + k));
     const st = DATA.map((_, i) => lineStyle(i)).concat(PATCH.map(i => lineStyle(i)));
     Plotly.restyle(sceneEl, { "line.color": st.map(s => s.color), "line.width": st.map(s => s.width),
                               opacity: st.map(s => s.opacity) }, idx);
-    Plotly.react(areaEl, areaTraces(), areaLayout(), { displayModeBar: false, responsive: true });
-    Plotly.react(needEl, needTraces(), needLayout(), { displayModeBar: false, responsive: true });
+    drawCharts();
     renderReadout();
   }
 
   function renderAll(keepCamera) {
     T = tokens();
     const cam = keepCamera && sceneEl.layout ? sceneEl.layout.scene.camera : null;
-    Plotly.react(sceneEl, sceneTraces(), sceneLayout(cam), { displaylogo: false, responsive: true,
-      modeBarButtonsToRemove: ["resetCameraLastSave3d", "hoverClosest3d", "orbitRotation", "tableRotation", "zoom3d", "pan3d"] });
-    Plotly.react(areaEl, areaTraces(), areaLayout(), { displayModeBar: false, responsive: true });
-    Plotly.react(needEl, needTraces(), needLayout(), { displayModeBar: false, responsive: true });
-    const ramp = document.getElementById("ramp");
-    ramp.style.background = `linear-gradient(90deg, ${T.div.join(",")})`;
-    document.getElementById("ramp-lo").textContent = `−${DEV_SPAN} ft`;
-    document.getElementById("ramp-hi").textContent = `+${DEV_SPAN} ft`;
-    renderYearBar();
+    Plotly.react(sceneEl, sceneTraces(), sceneLayout(cam), { displayModeBar: false, displaylogo: false, responsive: true });
+    drawCharts();
+    $("ramp").style.background = `linear-gradient(90deg, ${T.div.join(",")})`;
+    renderOverlay();
     if ((hovered ?? selected) !== null) applyFocus(); else renderReadout();
   }
 
-  // year slider: one stop per year with an outline (years with no outline are skipped)
+  // slider: one stop per year with an outline
   yearIn.max = N - 1; yearIn.value = N - 1;
-  const ticksEl = document.getElementById("year-ticks");
+  const ticksEl = $("year-ticks");
   years.forEach((y, i) => {
-    if (!(y % 10 === 0 || i === 0 || i === N - 1)) return;
+    if (!(i === 0 || i === N - 1 || (y % 10 === 0 && i > 5 && i < N - 6))) return;
     const p = i / (N - 1), s = document.createElement("span");
     s.textContent = y;
-    s.style.left = `calc(${p * 100}% + ${(0.5 - p) * 16}px)`;   // follow the thumb centre
+    s.style.left = `calc(${p * 100}% + ${(0.5 - p) * 16}px)`;
     if (i === 0) { s.style.left = "0"; s.style.transform = "none"; }
     if (i === N - 1) { s.style.left = "100%"; s.style.transform = "translateX(-100%)"; }
     ticksEl.appendChild(s);
   });
 
+  const coarse = matchMedia("(pointer: coarse)").matches;
+  $("hint").textContent = coarse ? "Drag to spin · pinch to zoom · tap a ring" : "Drag to spin · scroll to zoom · click a ring";
+
   renderAll(false);
 
-  // interactions
+  // ---- interactions ----
+  const hint = $("hint");
+  const dismissHint = () => hint.classList.add("gone");
+  sceneEl.addEventListener("pointerdown", dismissHint, { once: true });
+
   let raf = 0;
-  function setHover(i) { if (hovered === i) return; hovered = i; cancelAnimationFrame(raf); raf = requestAnimationFrame(applyFocus); }
+  function setHover(i) { if (coarse || hovered === i) return; hovered = i; cancelAnimationFrame(raf); raf = requestAnimationFrame(applyFocus); }
   sceneEl.on("plotly_hover", e => { const p = e.points[0]; if (p && p.curveNumber < N) setHover(p.curveNumber); });
   sceneEl.on("plotly_unhover", () => setHover(null));
-  sceneEl.on("plotly_click", e => { const p = e.points[0]; if (p && p.curveNumber < N) setSelected(selected === p.curveNumber ? null : p.curveNumber); });
+  sceneEl.on("plotly_click", e => { const p = e.points[0]; if (p && p.curveNumber < N) { stop(); setSelected(selected === p.curveNumber ? null : p.curveNumber); } });
   const pick = e => e.points.find(q => q.curveNumber === 1 || q.curveNumber === 4);
   areaEl.on("plotly_hover", e => { const p = pick(e); if (p) setHover(p.pointIndex); });
   areaEl.on("plotly_unhover", () => setHover(null));
-  areaEl.on("plotly_click", e => { const p = pick(e); if (p) setSelected(selected === p.pointIndex ? null : p.pointIndex); });
-
+  areaEl.on("plotly_click", e => { const p = pick(e); if (p) { stop(); setSelected(selected === p.pointIndex ? null : p.pointIndex); } });
   const pickNeed = e => { const p = e.points[0]; return p ? DATA.findIndex(d => d.year === p.x) : -1; };
   needEl.on("plotly_hover", e => { const i = pickNeed(e); if (i >= 0) setHover(i); });
   needEl.on("plotly_unhover", () => setHover(null));
-  needEl.on("plotly_click", e => { const i = pickNeed(e); if (i >= 0) setSelected(selected === i ? null : i); });
+  needEl.on("plotly_click", e => { const i = pickNeed(e); if (i >= 0) { stop(); setSelected(selected === i ? null : i); } });
 
   let sraf = 0;
   yearIn.addEventListener("input", e => {
+    stop();
     const i = parseInt(e.target.value, 10);
     cancelAnimationFrame(sraf);
     sraf = requestAnimationFrame(() => setSelected(i));
   });
-  document.getElementById("fills").addEventListener("change", e => {
-    fillsOn = e.target.checked;
+
+  // play through the years
+  const playBtn = $("play"), playI = $("play-i");
+  const ICON_PLAY = '<path d="M7 4.5v15l13-7.5z"/>', ICON_PAUSE = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+  let timer = null;
+  function stop() {
+    if (!timer) return;
+    clearInterval(timer); timer = null;
+    playI.innerHTML = ICON_PLAY; playBtn.setAttribute("aria-label", "Play through the years");
+  }
+  playBtn.addEventListener("click", () => {
+    if (timer) return stop();
+    let i = selected === null || selected >= N - 1 ? 0 : selected + 1;
+    setSelected(i);
+    playI.innerHTML = ICON_PAUSE; playBtn.setAttribute("aria-label", "Pause");
+    timer = setInterval(() => { i++; if (i >= N) return stop(); setSelected(i); }, 700);
+  });
+
+  const fillsBtn = $("fills");
+  fillsBtn.addEventListener("click", () => {
+    fillsOn = !fillsOn;
+    fillsBtn.setAttribute("aria-pressed", String(fillsOn));
     Plotly.restyle(sceneEl, { visible: fillsOn }, DATA.map((_, i) => N + i));
   });
-  document.getElementById("reset").addEventListener("click", () => Plotly.relayout(sceneEl, { "scene.camera": DEFAULT_CAM }));
-  document.getElementById("clear").addEventListener("click", () => setSelected(null));
+  $("reset").addEventListener("click", () => Plotly.relayout(sceneEl, { "scene.camera": homeCam() }));
+  $("clear").addEventListener("click", () => { stop(); setSelected(null); });
+
+  // chart tabs
+  const tabs = [["tab-area", "pane-area", areaEl], ["tab-need", "pane-need", needEl]];
+  function showTab(id) {
+    tabs.forEach(([t, p, el]) => {
+      const on = t === id;
+      $(t).setAttribute("aria-selected", String(on));
+      $(p).hidden = !on;
+      if (on) Plotly.Plots.resize(el);
+    });
+  }
+  tabs.forEach(([t]) => $(t).addEventListener("click", () => showTab(t)));
 
   // follow the viewer's theme
   const mq = matchMedia("(prefers-color-scheme: dark)");

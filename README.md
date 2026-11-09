@@ -20,6 +20,7 @@ Fall shorelines of Great Salt Lake mapped from Landsat imagery, stacked into a
 | `data/fall_levels_and_usgs_areas.csv` | Fall lake level at the Saltair gage and the USGS bathymetric area at that level |
 | `figures/scripts/` | Python that builds the static PNG and the interactive page from the shapefile |
 | `figures/output/` | The finished figures |
+| `figures/page_text.md` | The interactive page's full explanatory text (introduction, method notes, repairs and limits), kept out of the page itself |
 
 ## Method
 
