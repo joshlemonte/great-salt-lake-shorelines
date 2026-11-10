@@ -1,5 +1,5 @@
 """Build the data the interactive page draws, from the outline shapefile and prep_outlines.py's
-outlines.json, with three fixes and the water needed to reach 4,198 ft.
+outlines.json, with three fixes and the water needed to reach 4,207 ft (historic, long-term average level).
 
 1. Causeway: the railroad causeway splits the lake into two polygons whose shared edge draws as a
    straight line across the lake. Inside a box around the causeway only, the two arms are joined
@@ -10,7 +10,7 @@ outlines.json, with three fixes and the water needed to reach 4,198 ft.
    Shoreline that was filled rather than imaged is kept separately so the page can draw it dotted.
 3. Fill: every lake part is triangulated (the old build only filled the first ring, so years with the
    north arm as a separate polygon had no north-arm fill).
-Water needed: volume between the fall level and 4,198 ft, from the USGS bathymetric areas at each
+Water needed: volume between the fall level and 4,207 ft, from the USGS bathymetric areas at each
 year's fall level (repo CSV), integrated over elevation with a piecewise-linear area curve.
 
 Usage: python build_viz_data.py <outlines.shp> <levels.csv> <outlines.json> <viz_data.json> [outlines_fixed.json]
@@ -27,7 +27,7 @@ fixed_out = sys.argv[5] if len(sys.argv) > 5 else None
 X0, Y0 = 330000, 4490000
 TOL_KM, MIN_PART, MIN_HOLE = 0.06, 5.0, 1.0      # same as prep_outlines.py (m -> km)
 SMOOTH_KM, MIN_HOLE_LINE, FILL_SMOOTH, MIN_HOLE_FILL = 0.10, 3.0, 0.4, 20.0   # build_viz_data.py
-HEALTHY = 4198.0
+REF_FT = 4207.0          # historic (long-term) average lake level, NGVD29 ft; must match prep_outlines.py
 FT_KM = 0.0003048
 
 def km(g): return affinity.affine_transform(g, [1e-3, 0, 0, 1e-3, -X0 / 1e3, -Y0 / 1e3])
@@ -95,7 +95,7 @@ DONOR17 = DONORS[2017]
 
 ratio = sorted(meta[y].area_km2 / raw[y].area for y in raw)[len(raw) // 2]   # geodesic / planar
 
-# ---- water needed: integrate USGS area (km2) over level (ft) from the fall level to 4,198 ft ----
+# ---- water needed: integrate USGS area (km2) over level (ft) from the fall level to 4,207 ft ----
 lev = sorted(((float(r["elev_ngvd29"]), float(r["usgs_total"]), int(r["year"])) for r in csv.DictReader(open(levels_csv))))
 curve = sorted({e: a for e, a, _ in lev}.items())
 def area_at(e):
@@ -107,11 +107,11 @@ def vol_km3(e0, e1, n=400):   # km3 between levels e0 < e1
     return sum((area_at(e0 + i * h) + area_at(e0 + (i + 1) * h)) / 2 * h * FT_KM for i in range(n))
 M3_AF, M3_GAL, POOL_M3 = 1233.48184, 264.172052, 2500.0   # acre-foot, US gallons, Olympic pool (50x25x2 m)
 def need(e):
-    if e >= HEALTHY: return None
-    m3 = vol_km3(e, HEALTHY) * 1e9
+    if e >= REF_FT: return None
+    m3 = vol_km3(e, REF_FT) * 1e9
     return {"m3": round(m3), "af": round(m3 / M3_AF), "gal": round(m3 * M3_GAL), "pools": round(m3 / POOL_M3)}
-levels = [{"year": yy, "elev_ft": round(e, 2), "dev_ft": round(e - HEALTHY, 2), "need": need(e)} for e, _, yy in sorted(lev, key=lambda r: r[2])]
-print("USGS area at 4198:", round(area_at(HEALTHY)), "km2; 4191->4198:", round(vol_km3(4191, HEALTHY) * 1e9 / M3_AF / 1e6, 2), "M acre-ft")
+levels = [{"year": yy, "elev_ft": round(e, 2), "dev_ft": round(e - REF_FT, 2), "need": need(e)} for e, _, yy in sorted(lev, key=lambda r: r[2])]
+print(f"USGS area at {REF_FT:.0f}:", round(area_at(REF_FT)), "km2")
 
 # ---- drawing data ----
 def r2(v): return round(v, 2)
@@ -175,18 +175,18 @@ for y in sorted(fixed):
         est = round(g_true.area * ratio, 1)
         d.update(px=px, py=py, filled_note=notes[y], area_measured_km2=d["area_km2"], area_km2=est,
                  area_mi2=round(est / 2.589988, 1))
-        a_h = page["healthy"]["area_km2"]
-        d["vs_healthy_km2"] = round(est - a_h, 1)
+        a_h = page["reference"]["area_km2"]
+        d["vs_ref_km2"] = round(est - a_h, 1)
         d["exposed_km2"] = round(max(0.0, a_h - est), 1); d["exposed_mi2"] = round(d["exposed_km2"] / 2.589988, 1)
         print(y, "measured", d["area_measured_km2"], "-> gap-filled", est, "km2;", len([v for v in px if v is not None]), "filled pts")
     lv = next(l for l in levels if l["year"] == y)
     d["need"] = lv["need"]
     out_years.append(d)
-    for k in ("area_km2", "area_mi2", "exposed_km2", "exposed_mi2", "vs_healthy_km2", "need"):
+    for k in ("area_km2", "area_mi2", "exposed_km2", "exposed_mi2", "vs_ref_km2", "need"):
         fixed_years[-1][k] = d.get(k)
 
 if fixed_out:
     json.dump({**{k: v for k, v in page.items() if k != "years"}, "years": fixed_years}, open(fixed_out, "w"), separators=(",", ":"))
-json.dump({"union_km2": page["union_km2"], "healthy": page["healthy"], "donors": {str(k): v for k, v in DONORS.items()},
+json.dump({"union_km2": page["union_km2"], "reference": page["reference"], "donors": {str(k): v for k, v in DONORS.items()},
            "levels": levels, "years": out_years}, open(out, "w"), separators=(",", ":"))
 print("years", len(out_years), "line pts", sum(len(d["x"]) for d in out_years))

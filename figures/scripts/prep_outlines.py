@@ -51,7 +51,7 @@ for yr, g in year_layers(gdb):
                   "sensors": a["sensors"], "rings": rings})
 years_unsorted = list(years)
 years.sort(key=lambda d: d["year"])
-HEALTHY_FT = 4198.0      # minimum healthy lake level (NGVD29 ft)
+REF_FT = 4207.0          # reference level: historic (long-term) average lake level, NGVD29 ft (not the recent average)
 LEVELS = sys.argv[3] if len(sys.argv) > 3 else None   # fall gage levels CSV
 # Exposed lakebed: dry land inside the largest combined extent of the series
 # (union of every year's lake). Each year lies inside the union, so
@@ -64,35 +64,34 @@ union_km2 = union.area / 1e6 * ratio
 for y in years:
     y["exposed_km2"] = round(union_km2 - y["area_km2"], 1)
     y["exposed_mi2"] = round(y["exposed_km2"] / 2.589988, 1)
-healthy = None
+reference = None
 if LEVELS:
     # Fall lake level (Sep 1-Nov 15 mean, Saltair gage, NGVD29) for each year, and
-    # the Landsat-equivalent lake area at the healthy minimum: a linear fit of
+    # the Landsat-equivalent lake area at the reference level: a linear fit of
     # area on level for good/check years within 3 ft of it. Using the outlines'
     # own area-level relation keeps the comparison on one method.
     import csv, numpy as np
     lev = {int(r["year"]): r for r in csv.DictReader(open(LEVELS))}
     pts = [(float(lev[y["year"]]["elev_ngvd29"]), y["area_km2"]) for y in years
            if y["year"] in lev and y["quality"] != "poor"
-           and abs(float(lev[y["year"]]["elev_ngvd29"]) - HEALTHY_FT) <= 3]
+           and abs(float(lev[y["year"]]["elev_ngvd29"]) - REF_FT) <= 3]
     c = np.polyfit([p[0] for p in pts], [p[1] for p in pts], 1)
-    a_h = float(np.polyval(c, HEALTHY_FT))
-    usgs_h = None
-    healthy = {"elev_ft": HEALTHY_FT, "area_km2": round(a_h, 1), "fit_n": len(pts),
+    a_h = float(np.polyval(c, REF_FT))
+    reference = {"elev_ft": REF_FT, "area_km2": round(a_h, 1), "fit_n": len(pts),
                "fit_slope_km2_per_ft": round(float(c[0]), 1)}
     for y in years:
         r = lev.get(y["year"])
         if r is None:
             continue
         y["elev_ft"] = round(float(r["elev_ngvd29"]), 2)
-        y["dev_ft"] = round(y["elev_ft"] - HEALTHY_FT, 2)
-        y["vs_healthy_km2"] = round(y["area_km2"] - a_h, 1)
-        # lakebed that is under water at the healthy minimum but dry this fall
+        y["dev_ft"] = round(y["elev_ft"] - REF_FT, 2)
+        y["vs_ref_km2"] = round(y["area_km2"] - a_h, 1)
+        # lakebed that is under water at the reference level but dry this fall
         y["exposed_km2"] = round(max(0.0, a_h - y["area_km2"]), 1)
         y["exposed_mi2"] = round(y["exposed_km2"] / 2.589988, 1)
-    print(f"healthy minimum {HEALTHY_FT} ft -> {a_h:.0f} km2 "
+    print(f"reference level {REF_FT} ft -> {a_h:.0f} km2 "
           f"(n={len(pts)}, {c[0]:.0f} km2/ft)")
-json.dump({"origin_utm12n": [X0, Y0], "union_km2": round(union_km2, 1), "healthy": healthy,
+json.dump({"origin_utm12n": [X0, Y0], "union_km2": round(union_km2, 1), "reference": reference,
            "years": years}, open(out, "w"), separators=(",", ":"))
 print("max combined extent", round(union_km2), "km2; geodesic/planar", round(ratio, 5))
 print(len(years), "years;", sum(len(r[0]) for d in years for r in d["rings"]), "points")

@@ -4,10 +4,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: the 3D stack is the page. Phone: title, three headline numbers, stack, year scrubber,
+/* Reference: 4,207 ft historic (long-term) average lake level, not the recent average.
+   Layout: the 3D stack is the page. Phone: title, three headline numbers, stack, year scrubber,
    four year tiles, one tabbed chart. Desktop: stack + scrubber on the left, tiles + chart on the right. */
 :root {
-  --bg: #f6f7f6;          /* salt-flat white, faintly cool */
+  --bg: #ffffff;          /* white, to sit on the website page */
   --panel: #ffffff;
   --fg: #15191a;
   --muted: #5b6466;
@@ -16,8 +17,8 @@
   --brine: #b8405e;       /* north-arm brine pink: the selected year */
   --lake: #2a78d6;        /* lake-area series */
   --bed: #eb6834;         /* exposed-lakebed series */
-  --div: #9c3a12,#d9581f,#f0a07a,#b3b0a9,#7fb0ee,#2a78d6,#0d366b;  /* level: far below -> 4,198 ft -> far above */
-  --ref: #5b6466;         /* healthy-minimum reference line */
+  --div: #9c3a12,#d9581f,#f0a07a,#b3b0a9,#7fb0ee,#2a78d6,#0d366b;  /* level: far below -> 4,207 ft average -> above */
+  --ref: #5b6466;         /* historic average reference line */
   --good: #2f7d4f; --check: #9a6a00; --poor: #b23b3b;
   --glass: rgba(255,255,255,.86);
   --font: "Public Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -58,6 +59,8 @@ header { display: grid; gap: 14px; }
 .eyebrow { font: 500 11px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 h1 { margin: 2px 0 0; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.05; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
 .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-block: 1px solid var(--rule); }
+.facts-wrap { display: grid; gap: 6px; min-width: 0; }
+.facts-cap { font-size: 12px; color: var(--muted); }
 .fact { padding: 10px 12px 10px 0; display: grid; gap: 2px; align-content: start; min-width: 0; }
 .fact + .fact { padding-left: 12px; border-left: 1px solid var(--rule); }
 .fact b { font: 600 clamp(20px, 2.6vw, 28px)/1.05 var(--font); font-variant-numeric: tabular-nums; letter-spacing: -.01em; color: var(--bed); }
@@ -77,7 +80,7 @@ h1 { margin: 2px 0 0; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.05; fo
 @media (max-width: 600px) { #scene { height: clamp(320px, 58vh, 520px); } }
 .ov { position: absolute; pointer-events: none; }
 .ov > * { pointer-events: auto; }
-.ov-year { top: 10px; left: 12px; display: grid; gap: 6px; justify-items: start; }
+.ov-year { top: 10px; left: 12px; right: 58px; display: grid; gap: 6px; justify-items: start; }
 .bigyear { font: 700 clamp(30px, 5vw, 46px)/1 var(--font); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
 .bigyear.range { font-size: clamp(20px, 3vw, 26px); color: var(--muted); font-weight: 600; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -154,7 +157,10 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
       <div class="eyebrow">Seen from space · every fall, 1985–2026</div>
       <h1>Great Salt Lake Shorelines</h1>
     </div>
-    <div class="facts" id="facts"></div>
+    <div class="facts-wrap">
+      <div class="facts-cap">Compared with the lake's historic average level, 4,207 ft</div>
+      <div class="facts" id="facts"></div>
+    </div>
   </header>
 
   <div class="main">
@@ -190,11 +196,11 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
       </div>
 
       <div class="legend" aria-label="Legend">
-        <span class="ramp-wrap"><span>Too low</span><span class="ramp" id="ramp"></span><span>Higher</span></span>
+        <span class="ramp-wrap"><span>Below historic average</span><span class="ramp" id="ramp"></span><span>Above</span></span>
         <span class="lk cmp-off"><i class="dash"></i>Cloudy year</span>
         <span class="lk cmp-off"><i class="dot"></i>Gap filled in</span>
         <span class="lk cmp-only" hidden><i class="sel"></i>That fall</span>
-        <span class="lk cmp-only" hidden><i class="ref"></i>Healthy, 4,198 ft</span>
+        <span class="lk cmp-only" hidden><i class="ref"></i>Historic average, 4,207 ft</span>
         <span class="lk cmp-only" hidden><i class="wall" id="wall-key"></i>Missing water</span>
       </div>
     </div>
@@ -206,7 +212,7 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
           <div class="tile"><span class="lbl">Lake level</span><span class="val" id="r-elev"></span><span class="sub" id="r-dev"></span></div>
           <div class="tile"><span class="lbl">Lake size</span><span class="val" id="r-mi"></span><span class="sub" id="r-vs"></span></div>
           <div class="tile warn"><span class="lbl">Dry lakebed</span><span class="val" id="r-bed"></span><span class="sub" id="r-bed2"></span></div>
-          <div class="tile warn"><span class="lbl">Water to refill</span><span class="val" id="r-need"></span><span class="sub" id="r-need2"></span></div>
+          <div class="tile warn"><span class="lbl">Water to reach historic average</span><span class="val" id="r-need"></span><span class="sub" id="r-need2"></span></div>
         </div>
       </section>
 
@@ -219,14 +225,14 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
           <div class="series" aria-hidden="true">
             <span><i style="background: var(--lake)"></i>Lake</span>
             <span><i style="background: var(--bed)"></i>Dry lakebed</span>
-            <span><i class="dash"></i>Healthy size</span>
+            <span><i class="dash"></i>Size at historic average</span>
             <span>sq mi</span>
           </div>
           <div id="area"></div>
         </div>
         <div id="pane-need" role="tabpanel" aria-labelledby="tab-need" hidden>
           <div class="series" aria-hidden="true">
-            <span><i style="background: var(--bed)"></i>Water to reach 4,198 ft</span>
+            <span><i style="background: var(--bed)"></i>Water to reach historic average (4,207 ft)</span>
             <span>trillion gallons</span>
           </div>
           <div id="need"></div>
@@ -238,8 +244,9 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
   <details class="about">
     <summary>About the data</summary>
     <ul>
-      <li>Each ring is the average fall shoreline (Sep 1 – Nov 15), traced from cloud-free Landsat images.</li>
-      <li>Healthy range starts at 4,198 ft (Utah DNR). Lake level from the USGS Saltair gauge.</li>
+      <li>Each ring is the typical fall shoreline (Sep 1 – Nov 15), traced from cloud-free Landsat images.</li>
+      <li>The reference is the lake's historic (long-term) average level, 4,207 ft. It is not the recent average: falls 1997–2026 averaged 4,194.8 ft, about 12 ft lower.</li>
+      <li>Lake level from the USGS Saltair gauge.</li>
       <li>Water needed comes from USGS lakebed volume tables. No outline for 2025.</li>
       <li>Sources: USGS Landsat via Esri Living Atlas, processed in ArcGIS Pro; USGS lake levels.</li>
     </ul>
@@ -252,14 +259,16 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
 <script>
 (function () {
   const RAW = JSON.parse(document.getElementById("data").textContent);
-  const DATA = RAW.years, LEVELS = RAW.levels, HEALTHY = RAW.healthy;
+  const DATA = RAW.years, LEVELS = RAW.levels, REF_LVL = RAW.reference;
   const $ = id => document.getElementById(id);
   const needEl = $("need"), sceneEl = $("scene"), areaEl = $("area");
   const years = DATA.map(d => d.year);
   const KM2_MI2 = 2.589988;
   const areas = DATA.map(d => d.area_mi2);
   const beds = DATA.map(d => d.exposed_mi2);
-  const A_H = HEALTHY.area_km2 / KM2_MI2, DEV_SPAN = 12;   // healthy lake size (sq mi); ring color saturates at ±12 ft
+  const A_REF = REF_LVL.area_km2 / KM2_MI2;      // lake size at the historic (long-term) average level, sq mi
+  const REF_FT = REF_LVL.elev_ft;
+  const DEV_LO = 18, DEV_HI = 4;                 // ring color saturates 18 ft below / 4 ft above the historic average
   const gapped = vals => { const xs = [], ys = [];
     years.forEach((y, i) => { if (i && y - years[i - 1] > 1) { xs.push(y - 0.5); ys.push(null); } xs.push(y); ys.push(vals[i]); });
     return [xs, ys]; };
@@ -268,11 +277,10 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
   const N = DATA.length;
   const fmt = n => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
   const fmt1 = n => n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const lowHigh = v => Math.abs(v) < 0.05 ? "At healthy level" : `${Math.abs(v).toFixed(1)} ft ${v < 0 ? "too low" : "above healthy"}`;
+  const lowHigh = v => Math.abs(v) < 0.05 ? "At historic average" : `${Math.abs(v).toFixed(1)} ft ${v < 0 ? "below" : "above"} historic average`;
   const galText = g => g >= 1e12 ? `${(g / 1e12).toFixed(1)} trillion gallons` : `${fmt(Math.round(g / 1e10) * 10)} billion gallons`;
   const galShort = g => g >= 1e12 ? [(g / 1e12).toFixed(1), "trillion gal"] : [fmt(Math.round(g / 1e10) * 10), "billion gal"];
   const poolsText = p => p >= 1e6 ? `${(p / 1e6).toFixed(1)} million` : fmt(Math.round(p / 1e4) * 1e4);
-  const afText = a => a >= 1e6 ? `${(a / 1e6).toFixed(1)} million acre-ft` : `${fmt(Math.round(a / 1e4) * 1e4)} acre-ft`;
   const PATCH = DATA.map((d, i) => (d.px ? i : -1)).filter(i => i >= 0);
   const fullX = d => (d.px ? d.x.concat([null], d.px) : d.x);
   const fullY = d => (d.py ? d.y.concat([null], d.py) : d.y);
@@ -288,10 +296,11 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
   let since = null;
   for (let i = N - 1; i >= 0 && DATA[i].dev_ft < 0; i--) since = DATA[i].year;
   const lowest = DATA.reduce((a, b) => (b.dev_ft < a.dev_ft ? b : a));
+  const [lg, lu] = galShort(lowest.need.gal);
   const facts = [
-    ["Too low every fall since", String(since)],
-    [`Short of healthy at the ${lowest.year} low`, `${Math.abs(lowest.dev_ft).toFixed(1)} ft`],
-    [`Gallons to refill it in ${lowest.year}`, galShort(lowest.need.gal)[0] + " " + galShort(lowest.need.gal)[1].replace(" gal", "")]
+    ["Below it every fall since", String(since)],
+    [`Short of it at the ${lowest.year} low`, `${Math.abs(lowest.dev_ft).toFixed(1)} ft`],
+    [`Gallons to reach it in ${lowest.year}`, `${lg} ${lu.replace(" gal", "")}`]
   ];
   $("facts").innerHTML = facts.map(([l, v]) => `<div class="fact"><span>${l}</span><b>${v}</b></div>`).join("");
 
@@ -309,7 +318,9 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
     const a = hexRgb(ramp[i]), b = hexRgb(ramp[i + 1]);
     return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
   }
-  const devColor = d => rampColor(T.div, (d.dev_ft + DEV_SPAN) / (2 * DEV_SPAN));
+  // diverging around the historic average: below uses the orange half, above the blue half
+  const devT = v => v < 0 ? 0.5 + Math.max(v, -DEV_LO) / (2 * DEV_LO) : 0.5 + Math.min(v, DEV_HI) / (2 * DEV_HI);
+  const devColor = d => rampColor(T.div, devT(d.dev_ft));
 
   let T = tokens();
   let selected = null, hovered = null, fillsOn = true;
@@ -319,6 +330,7 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
   const P0 = 2 * N + 4;
   const STACK_Z = 0.7;
   const FT_TO_Z = 1;
+  // reference outline: the best-imaged year whose fall level is closest to the historic average
   const REF = DATA.reduce((a, d, i) =>
     (d.quality === "good" && (a === null || Math.abs(d.dev_ft) < Math.abs(DATA[a].dev_ft)) ? i : a), null) ?? 0;
   const zVals = DATA.flatMap(d => [d.year, d.year + d.dev_ft * FT_TO_Z]);
@@ -335,7 +347,7 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
     return { color: base, width: (i === iMax || i === iMin) ? 5 : 2.5, opacity: 1 };
   }
 
-  // ---- comparison: selected shoreline lifted to its real level against the healthy minimum ----
+  // ---- comparison: selected shoreline lifted to its real level against the historic average ----
   function curtain(d, za, zb) {
     const x = [], y = [], z = [], I = [], J = [], K = [];
     let prev = -1;
@@ -388,7 +400,7 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
     const base = { showarrow: true, arrowhead: 0, arrowwidth: 1, arrowcolor: T.muted, bgcolor: T.panel, bordercolor: T.rule,
       borderpad: 3, ay: 0, font: { family: T.font, size: 11, color: T.fg } };
     return [
-      { ...base, ...extreme(c.r, c.z0, false), ax: -off, xanchor: "right", text: "Healthy" },
+      { ...base, ...extreme(c.r, c.z0, false), ax: -off, xanchor: "right", text: "Historic average" },
       { ...base, ...extreme(c.d, c.z1, true), ax: off, xanchor: "left", text: `<b>${c.d.year}</b>` }
     ];
   }
@@ -399,7 +411,8 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
       const st = lineStyle(i);
       tr.push({
         type: "scatter3d", mode: "lines", x: d.x, y: d.y, z: d.x.map(v => v === null ? null : d.year),
-        connectgaps: false, line: { color: st.color, width: st.width, dash: d.quality === "poor" ? "dash" : "solid" },
+        connectgaps: false, opacity: st.opacity,
+        line: { color: st.color, width: st.width, dash: d.quality === "poor" ? "dash" : "solid" },
         hovertemplate: `<b>Fall ${d.year}</b><br>${lowHigh(d.dev_ft)}<br>${fmt(d.area_mi2)} sq mi<extra></extra>`,
         showlegend: false, name: String(d.year)
       });
@@ -415,7 +428,8 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
     PATCH.forEach(i => {
       const d = DATA[i], st = lineStyle(i);
       tr.push({ type: "scatter3d", mode: "lines", x: d.px, y: d.py, z: d.px.map(v => v === null ? null : d.year),
-        connectgaps: false, line: { color: st.color, width: st.width, dash: "dot" }, hoverinfo: "skip", showlegend: false });
+        connectgaps: false, opacity: st.opacity, line: { color: st.color, width: st.width, dash: "dot" },
+        hoverinfo: "skip", showlegend: false });
     });
     return tr;
   }
@@ -450,79 +464,115 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
     };
   }
 
+  // ---- charts. Traces are built once; focus changes only recolor markers (a style-only restyle that
+  //      never redraws the plot or drops its hover label). The chart under the cursor is left alone. ----
+  const focusIdx = () => hovered ?? selected;
+  function areaMarkerStyle() {
+    const f = focusIdx();
+    return {
+      lake: { color: DATA.map((d, i) => i === f ? T.brine : (d.quality === "poor" ? T.panel : T.lake)),
+              lineColor: DATA.map((d, i) => i === f ? T.fg : (d.quality === "poor" ? T.lake : T.panel)),
+              lineWidth: DATA.map((d, i) => i === f ? 2.5 : (d.quality === "poor" ? 2 : 1.5)) },
+      bed: { color: DATA.map((_, i) => i === f ? T.brine : T.bed),
+             lineColor: DATA.map((_, i) => i === f ? T.fg : T.panel),
+             lineWidth: DATA.map((_, i) => i === f ? 2 : 1) }
+    };
+  }
   function areaTraces() {
-    const focus = hovered ?? selected;
+    const s = areaMarkerStyle();
     return [
       { type: "scatter", mode: "lines", x: gapped(areas)[0], y: gapped(areas)[1], line: { color: T.lake, width: 2 },
         connectgaps: false, hoverinfo: "skip", showlegend: false },
-      { type: "scatter", mode: "markers", x: years, y: areas,
-        marker: {
-          size: years.map((_, i) => i === focus ? 12 : 7),
-          symbol: DATA.map(d => d.px ? "diamond" : "circle"),
-          color: DATA.map((d, i) => d.quality === "poor" ? T.panel : (i === focus ? T.brine : devColor(d))),
-          line: { width: DATA.map(d => d.quality === "poor" ? 2 : 1.5),
-                  color: DATA.map((d, i) => d.quality === "poor" ? (i === focus ? T.brine : devColor(d)) : T.panel) }
-        },
-        hovertemplate: "<b>Fall %{x}</b><br>lake: %{y:,.0f} sq mi<extra></extra>", showlegend: false },
-      { type: "scatter", mode: "lines", x: [years[0] - 1, years[N - 1] + 1], y: [A_H, A_H],
+      { type: "scatter", mode: "markers", x: years, y: areas, customdata: beds,
+        marker: { size: 8, symbol: DATA.map(d => d.px ? "diamond" : "circle"),
+                  color: s.lake.color, line: { color: s.lake.lineColor, width: s.lake.lineWidth } },
+        hovertemplate: "<b>Fall %{x}</b><br>Lake %{y:,.0f} sq mi<br>Dry lakebed %{customdata:,.0f} sq mi<extra></extra>",
+        showlegend: false },
+      { type: "scatter", mode: "lines", x: [years[0] - 1, years[N - 1] + 1], y: [A_REF, A_REF],
         line: { color: T.ref, width: 1.5, dash: "dash" }, hoverinfo: "skip", showlegend: false },
       { type: "scatter", mode: "lines", x: gapped(beds)[0], y: gapped(beds)[1], line: { color: T.bed, width: 2 },
         connectgaps: false, hoverinfo: "skip", showlegend: false },
       { type: "scatter", mode: "markers", x: years, y: beds,
-        marker: { size: years.map((_, i) => i === focus ? 10 : 5),
-                  color: years.map((_, i) => i === focus ? T.brine : T.bed), line: { width: 1.5, color: T.panel } },
-        hovertemplate: "<b>Fall %{x}</b><br>dry lakebed: %{y:,.0f} sq mi<extra></extra>", showlegend: false }
+        marker: { size: 6, color: s.bed.color, line: { color: s.bed.lineColor, width: s.bed.lineWidth } },
+        hoverinfo: "skip", showlegend: false }
     ];
   }
-  const axisX = (hi) => ({ showgrid: false, zeroline: false, linecolor: T.rule, ticks: "", dtick: 10, tick0: 1990, tickangle: 0,
+  const axisX = hi => ({ showgrid: false, zeroline: false, linecolor: T.rule, ticks: "", dtick: 10, tick0: 1990, tickangle: 0,
     fixedrange: true, range: [years[0] - 1, hi + 1] });
   const baseLayout = () => ({
     paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
     margin: { l: 42, r: 10, t: 6, b: 26 }, font: { family: T.mono, color: T.muted, size: 11 },
-    hovermode: "closest",
+    dragmode: false,
     hoverlabel: { bgcolor: T.panel, bordercolor: T.rule, font: { family: T.mono, color: T.fg, size: 12 } }
   });
   function areaLayout() {
-    return { ...baseLayout(), xaxis: axisX(years[N - 1]),
+    return { ...baseLayout(),
+      hovermode: "x", hoverdistance: -1, spikedistance: -1,   // any point in a year's column picks that year
+      xaxis: { ...axisX(years[N - 1]), showspikes: true, spikemode: "across", spikesnap: "data",
+               spikecolor: T.muted, spikethickness: 1, spikedash: "solid" },
       yaxis: { gridcolor: T.grid, zeroline: false, showline: false, tickformat: ",", fixedrange: true,
                dtick: 500, range: [0, Math.ceil((Math.max(...areas) + 100) / 500) * 500] } };
   }
+  const NEED = LEVELS.filter(l => l.need);
+  const needColors = () => { const f = focusIdx(), fy = f !== null ? DATA[f].year : null;
+    return NEED.map(l => l.year === fy ? T.brine : T.bed); };
   function needTraces() {
-    const fy = (hovered ?? selected) !== null ? DATA[hovered ?? selected].year : null;
-    const L = LEVELS.filter(l => l.need);
     return [{
-      type: "bar", x: L.map(l => l.year), y: L.map(l => l.need.gal / 1e12),
-      marker: { color: L.map(l => l.year === fy ? T.brine : T.bed), line: { width: 0 } },
-      customdata: L.map(l => [galText(l.need.gal), poolsText(l.need.pools), afText(l.need.af), lowHigh(l.dev_ft)]),
-      hovertemplate: "<b>Fall %{x}</b> · %{customdata[3]}<br>%{customdata[0]}<br>≈ %{customdata[1]} Olympic pools<extra></extra>",
+      type: "bar", x: NEED.map(l => l.year), y: NEED.map(l => l.need.gal / 1e12),
+      marker: { color: needColors(), line: { width: 0 } },
+      customdata: NEED.map(l => [galText(l.need.gal), poolsText(l.need.pools), lowHigh(l.dev_ft)]),
+      hovertemplate: "<b>Fall %{x}</b> · %{customdata[2]}<br>%{customdata[0]}<br>≈ %{customdata[1]} Olympic pools<extra></extra>",
       showlegend: false
     }];
   }
   function needLayout() {
-    const L = LEVELS.filter(l => l.need), top = Math.max(...L.map(l => l.need.gal / 1e12));
-    const firstBelow = Math.min(...L.map(l => l.year));
-    return { ...baseLayout(), bargap: 0.2,
+    const top = Math.max(...NEED.map(l => l.need.gal / 1e12));
+    return { ...baseLayout(), bargap: 0.2, hovermode: "x", hoverdistance: -1,
       xaxis: axisX(Math.max(years[N - 1], LEVELS[LEVELS.length - 1].year)),
-      yaxis: { gridcolor: T.grid, zeroline: false, showline: false, fixedrange: true, dtick: 0.5, tickformat: ".1f",
-               range: [0, Math.ceil(top * 2 + 0.2) / 2] },
-      annotations: [{ x: (years[0] + firstBelow) / 2 - 1, y: 0, yanchor: "bottom", yshift: 4, showarrow: false,
-                      text: "Healthy years", font: { family: T.font, size: 11, color: T.muted } }] };
+      yaxis: { gridcolor: T.grid, zeroline: false, showline: false, fixedrange: true, dtick: 1, tickformat: ".0f",
+               range: [0, Math.ceil(top + 0.2)] } };
   }
+  function styleArea() {
+    const s = areaMarkerStyle();
+    Plotly.restyle(areaEl, {
+      "marker.color": [s.lake.color, s.bed.color],
+      "marker.line.color": [s.lake.lineColor, s.bed.lineColor],
+      "marker.line.width": [s.lake.lineWidth, s.bed.lineWidth]
+    }, [1, 4]);
+  }
+  function styleNeed() { Plotly.restyle(needEl, { "marker.color": [needColors()] }, [0]); }
+
+  // ---- 3D stack: restyle only the rings whose look changed ----
+  let drawnStyles = [];
+  const RING_IDX = DATA.map((_, i) => i).concat(PATCH.map((_, k) => P0 + k));
+  const ringStyles = () => DATA.map((_, i) => lineStyle(i)).concat(PATCH.map(i => lineStyle(i)));
+  function styleScene() {
+    const st = ringStyles(), idx = [], c = [], w = [], o = [];
+    st.forEach((s, k) => {
+      const p = drawnStyles[k];
+      if (p && p.color === s.color && p.width === s.width && p.opacity === s.opacity) return;
+      idx.push(RING_IDX[k]); c.push(s.color); w.push(s.width); o.push(s.opacity);
+    });
+    drawnStyles = st;
+    if (idx.length) Plotly.restyle(sceneEl, { "line.color": c, "line.width": w, opacity: o }, idx);
+  }
+  let sceneTimer = 0;
+  function scheduleScene(delay) { clearTimeout(sceneTimer); sceneTimer = setTimeout(styleScene, delay); }
 
   function renderReadout() {
-    const i = hovered ?? selected ?? N - 1;
+    const i = focusIdx() ?? N - 1;
     const d = DATA[i];
-    $("yc-label").textContent = (hovered ?? selected) === null ? `Latest · fall ${d.year}` : `Fall ${d.year}`;
+    $("yc-label").textContent = focusIdx() === null ? `Latest · fall ${d.year}` : `Fall ${d.year}`;
     const q = $("r-q");
     q.textContent = { good: "Clear view", check: "Some clouds", poor: "Cloudy" }[d.quality] || d.quality;
     q.className = "pill " + d.quality;
     $("r-elev").innerHTML = `${fmt1(d.elev_ft)}<small>ft</small>`;
     $("r-dev").textContent = lowHigh(d.dev_ft);
     $("r-mi").innerHTML = `${fmt(d.area_mi2)}<small>sq mi</small>`;
-    const pct = (d.area_mi2 - A_H) / A_H * 100;
-    $("r-vs").textContent = Math.abs(pct) < 0.5 ? "Healthy size" : `${Math.abs(pct).toFixed(0)}% ${pct < 0 ? "smaller" : "larger"} than healthy`;
+    const pct = (d.area_mi2 - A_REF) / A_REF * 100;
+    $("r-vs").textContent = Math.abs(pct) < 0.5 ? "Same as at historic average" : `${Math.abs(pct).toFixed(0)}% ${pct < 0 ? "smaller" : "larger"} than at historic average`;
     $("r-bed").innerHTML = d.exposed_mi2 > 0 ? `${fmt(d.exposed_mi2)}<small>sq mi</small>` : "None";
-    $("r-bed2").textContent = d.exposed_mi2 > 0 ? "underwater when healthy" : "";
+    $("r-bed2").textContent = d.exposed_mi2 > 0 ? "underwater at historic average" : "";
     if (d.need) { const [v, u] = galShort(d.need.gal); $("r-need").innerHTML = `${v}<small>${u}</small>`; }
     else $("r-need").textContent = "None";
     $("r-need2").textContent = d.need ? `≈ ${poolsText(d.need.pools)} Olympic pools` : "";
@@ -560,37 +610,34 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
     }, { "scene.annotations": compAnnotations(c) }, [2 * N + 2]);
   }
 
+  // focus changed: update everything except the view the pointer is on (`source`)
+  function refocus(source, sceneDelay) {
+    renderReadout();
+    if (source !== "area") styleArea();
+    if (source !== "need") styleNeed();
+    scheduleScene(sceneDelay);
+  }
+
   const yearIn = $("year");
-  function setSelected(i) {
-    selected = i; hovered = null;
+  function setSelected(i, source) {
+    selected = i; hovered = null; clearTimeout(leaveTimer);
     yearIn.value = i !== null ? i : N - 1;
     renderOverlay();
     updateComparison();
-    applyFocus();
+    refocus(source === "area" || source === "need" ? null : source, 0);
   }
 
   const CFG = { displayModeBar: false, responsive: true };
-  function drawCharts() {
-    Plotly.react(areaEl, areaTraces(), areaLayout(), CFG);
-    Plotly.react(needEl, needTraces(), needLayout(), CFG);
-  }
-  function applyFocus() {
-    const idx = DATA.map((_, i) => i).concat(PATCH.map((_, k) => P0 + k));
-    const st = DATA.map((_, i) => lineStyle(i)).concat(PATCH.map(i => lineStyle(i)));
-    Plotly.restyle(sceneEl, { "line.color": st.map(s => s.color), "line.width": st.map(s => s.width),
-                              opacity: st.map(s => s.opacity) }, idx);
-    drawCharts();
-    renderReadout();
-  }
-
   function renderAll(keepCamera) {
     T = tokens();
     const cam = keepCamera && sceneEl.layout ? sceneEl.layout.scene.camera : null;
     Plotly.react(sceneEl, sceneTraces(), sceneLayout(cam), { displayModeBar: false, displaylogo: false, responsive: true });
-    drawCharts();
+    drawnStyles = ringStyles();
+    Plotly.react(areaEl, areaTraces(), areaLayout(), CFG);
+    Plotly.react(needEl, needTraces(), needLayout(), CFG);
     $("ramp").style.background = `linear-gradient(90deg, ${T.div.join(",")})`;
     renderOverlay();
-    if ((hovered ?? selected) !== null) applyFocus(); else renderReadout();
+    renderReadout();
   }
 
   // slider: one stop per year with an outline
@@ -612,30 +659,44 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
   renderAll(false);
 
   // ---- interactions ----
-  const hint = $("hint");
-  const dismissHint = () => hint.classList.add("gone");
-  sceneEl.addEventListener("pointerdown", dismissHint, { once: true });
+  $("scene").addEventListener("pointerdown", () => $("hint").classList.add("gone"), { once: true });
 
-  let raf = 0;
-  function setHover(i) { if (coarse || hovered === i) return; hovered = i; cancelAnimationFrame(raf); raf = requestAnimationFrame(applyFocus); }
-  sceneEl.on("plotly_hover", e => { const p = e.points[0]; if (p && p.curveNumber < N) setHover(p.curveNumber); });
-  sceneEl.on("plotly_unhover", () => setHover(null));
-  sceneEl.on("plotly_click", e => { const p = e.points[0]; if (p && p.curveNumber < N) { stop(); setSelected(selected === p.curveNumber ? null : p.curveNumber); } });
-  const pick = e => e.points.find(q => q.curveNumber === 1 || q.curveNumber === 4);
-  areaEl.on("plotly_hover", e => { const p = pick(e); if (p) setHover(p.pointIndex); });
-  areaEl.on("plotly_unhover", () => setHover(null));
-  areaEl.on("plotly_click", e => { const p = pick(e); if (p) { stop(); setSelected(selected === p.pointIndex ? null : p.pointIndex); } });
-  const pickNeed = e => { const p = e.points[0]; return p ? DATA.findIndex(d => d.year === p.x) : -1; };
-  needEl.on("plotly_hover", e => { const i = pickNeed(e); if (i >= 0) setHover(i); });
-  needEl.on("plotly_unhover", () => setHover(null));
-  needEl.on("plotly_click", e => { const i = pickNeed(e); if (i >= 0) { stop(); setSelected(selected === i ? null : i); } });
+  // hover: apply at once when entering a year; clearing waits a beat, so moving between points
+  // or briefly off the plot does not flash the readout back to the latest year
+  let leaveTimer = 0;
+  function hoverYear(i, source) {
+    if (coarse) return;
+    clearTimeout(leaveTimer);
+    if (hovered === i) return;
+    hovered = i;
+    refocus(source, source === "scene" ? 0 : 60);
+  }
+  function leaveYear(source) {
+    if (coarse) return;
+    clearTimeout(leaveTimer);
+    leaveTimer = setTimeout(() => { if (hovered === null) return; hovered = null; refocus(null, 0); }, 180);
+  }
+
+  sceneEl.on("plotly_hover", e => { const p = e.points[0]; if (p && p.curveNumber < N) hoverYear(p.curveNumber, "scene"); });
+  sceneEl.on("plotly_unhover", () => leaveYear("scene"));
+  sceneEl.on("plotly_click", e => { const p = e.points[0]; if (p && p.curveNumber < N) { stop(); setSelected(selected === p.curveNumber ? null : p.curveNumber, "scene"); } });
+
+  const areaPick = e => { const p = e.points.find(q => q.curveNumber === 1); return p ? p.pointIndex : -1; };
+  areaEl.on("plotly_hover", e => { const i = areaPick(e); if (i >= 0) hoverYear(i, "area"); });
+  areaEl.on("plotly_unhover", () => leaveYear("area"));
+  areaEl.on("plotly_click", e => { const i = areaPick(e); if (i >= 0) { stop(); setSelected(selected === i ? null : i, "area"); } });
+
+  const needPick = e => { const p = e.points[0]; return p ? DATA.findIndex(d => d.year === p.x) : -1; };
+  needEl.on("plotly_hover", e => { const i = needPick(e); if (i >= 0) hoverYear(i, "need"); });
+  needEl.on("plotly_unhover", () => leaveYear("need"));
+  needEl.on("plotly_click", e => { const i = needPick(e); if (i >= 0) { stop(); setSelected(selected === i ? null : i, "need"); } });
 
   let sraf = 0;
   yearIn.addEventListener("input", e => {
     stop();
     const i = parseInt(e.target.value, 10);
     cancelAnimationFrame(sraf);
-    sraf = requestAnimationFrame(() => setSelected(i));
+    sraf = requestAnimationFrame(() => setSelected(i, "slider"));
   });
 
   // play through the years
@@ -650,9 +711,9 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
   playBtn.addEventListener("click", () => {
     if (timer) return stop();
     let i = selected === null || selected >= N - 1 ? 0 : selected + 1;
-    setSelected(i);
+    setSelected(i, "play");
     playI.innerHTML = ICON_PAUSE; playBtn.setAttribute("aria-label", "Pause");
-    timer = setInterval(() => { i++; if (i >= N) return stop(); setSelected(i); }, 700);
+    timer = setInterval(() => { i++; if (i >= N) return stop(); setSelected(i, "play"); }, 700);
   });
 
   const fillsBtn = $("fills");
@@ -662,7 +723,7 @@ details.about ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px
     Plotly.restyle(sceneEl, { visible: fillsOn }, DATA.map((_, i) => N + i));
   });
   $("reset").addEventListener("click", () => Plotly.relayout(sceneEl, { "scene.camera": homeCam() }));
-  $("clear").addEventListener("click", () => { stop(); setSelected(null); });
+  $("clear").addEventListener("click", () => { stop(); setSelected(null, "button"); });
 
   // chart tabs
   const tabs = [["tab-area", "pane-area", areaEl], ["tab-need", "pane-need", needEl]];

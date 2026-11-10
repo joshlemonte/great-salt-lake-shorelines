@@ -32,7 +32,7 @@ for y in d:
 years = np.array([y["year"] for y in d])
 areas = np.array([y["area_km2"] for y in d])
 beds = np.array([y["exposed_km2"] for y in d])
-H = json.load(open(src))["healthy"]
+H = (lambda j: j.get("reference") or j["healthy"])(json.load(open(src)))   # reference level block
 A_H, H_FT = H["area_km2"], H["elev_ft"]
 devs = np.array([y["dev_ft"] for y in d])
 DEV_SPAN = 12          # color saturates at ±12 ft from the healthy minimum

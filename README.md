@@ -1,7 +1,8 @@
 # Great Salt Lake shorelines, 1985–2026
 
 Fall shorelines of Great Salt Lake mapped from Landsat imagery, stacked into a
-3D figure and compared with the lake's 4,198 ft minimum healthy level.
+3D figure and compared with the lake's historic (long-term) average level, 4,207 ft. (The static PNG
+still uses the earlier 4,198 ft healthy-minimum reference.)
 
 ![Stacked fall shorelines of Great Salt Lake, 1985–2026](figures/output/GSL_shoreline_stack_1985-2026.png)
 
@@ -43,26 +44,31 @@ Online organizational account and does not use credits.
 - `edge_gap`: percent of the shoreline that borders unobserved (cloud) pixels.
 - `quality`: good (≤ 2%), check (≤ 10%) or poor (> 10%).
 
-**Healthy minimum.** The 4,198 ft (NGVD29) level is about 3,836 km² of lake on this
-Landsat basis. That number comes from a straight-line fit of outline area against
-fall lake level for the 13 years within 3 ft of 4,198 ft (about 218 km² per ft).
-USGS bathymetry gives 3,684 km² at 4,198 ft. "Lakebed exposed below the healthy
-level" is 3,836 km² minus that fall's lake area, or zero when the lake is larger.
+**Reference level: historic average.** The interactive page compares each fall with
+the lake's historic (long-term) average level, 4,207 ft (NGVD29), set as `REF_FT` in
+`prep_outlines.py` and `build_viz_data.py`. On this Landsat basis 4,207 ft is about
+5,718 km² of lake, from a straight-line fit of outline area against fall lake level
+for the 3 years within 3 ft of it (1985, 1987, 1988; about 224 km² per ft). USGS
+bathymetry gives 5,503 km² at 4,207 ft; the Landsat figure is 3.9% higher, in line
+with the offset at lower levels. "Dry lakebed" is 5,718 km² minus that fall's lake
+area, or zero when the lake is larger. Every fall since 1988 has been below 4,207 ft. This is not the recent average: the
+falls of 1997–2026 averaged 4,194.8 ft at the Saltair gage, about 12 ft lower.
 
 **Check against USGS.** Each fall's Landsat area is within 0.93–1.14 of the USGS
 bathymetric area at that fall's mean Saltair gage level (r = 0.986). The Landsat
 areas run about 5% higher on average, consistent with wet margins and connected
 ponds being counted as water.
 
-**Water needed to reach 4,198 ft.** For each fall below the healthy minimum, the
-volume of water between that fall's level and 4,198 ft: the USGS bathymetric lake
+**Water needed to reach 4,207 ft.** For each fall below the historic average, the
+volume of water between that fall's level and 4,207 ft: the USGS bathymetric lake
 area at each fall level (`data/fall_levels_and_usgs_areas.csv`) as a piecewise-linear
-area–elevation curve, integrated from the fall level up to 4,198 ft. The page gives it
-in gallons, Olympic swimming pools (2,500 m³, about 660,000 gallons) and acre-feet.
-It assumes the whole lake rises to 4,198 ft at the south-arm Saltair gage; the north
-arm usually sits lower, so the true amount is somewhat larger. From 4,191 ft this
-gives about 5.2 million acre-feet, close to published estimates of roughly 5 million.
-The 2022 low (4,188.9 ft) needs about 2.1 trillion gallons.
+area–elevation curve, integrated from the fall level up to 4,207 ft. The page gives it
+in gallons and Olympic swimming pools (2,500 m³, about 660,000 gallons).
+It assumes the whole lake rises to 4,207 ft at the south-arm Saltair gage; the north
+arm usually sits lower, so the true amount is somewhat larger. As a check on the
+method, 4,191 to 4,198 ft gives about 5.2 million acre-feet, close to published
+estimates of roughly 5 million. The 2022 low (4,188.9 ft) needs about 5.5 trillion
+gallons (16.8 million acre-feet) to reach 4,207 ft.
 
 **Drawing fixes** (`figures/scripts/build_viz_data.py`):
 - *Causeway.* The railroad causeway splits the lake into north and south arms, and
